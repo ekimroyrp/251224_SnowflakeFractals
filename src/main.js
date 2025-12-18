@@ -539,7 +539,7 @@ function initUI() {
           <div id="branches-controls" class="section-content"></div>
         </div>
         <div class="section">
-          <div class="section-title">Tracers</div>
+          <div class="section-title">Spikes</div>
           <div id="tracers-controls" class="section-content"></div>
         </div>
         <div class="section">
@@ -679,63 +679,63 @@ function initUI() {
     makeSlider(branchesContainer, "symmetry", "Symmetry", "symmetry", 3, 12, 1, rebuildSnowflake, (v) => v.toFixed(0))
   );
   updaters.push(
-    makeSlider(branchesContainer, "armLength", "Arm length", "armLength", 4, 12, 0.1, rebuildSnowflake, (v) => v.toFixed(1))
+    makeSlider(branchesContainer, "armLength", "Length", "armLength", 4, 12, 0.1, rebuildSnowflake, (v) => v.toFixed(1))
   );
   updaters.push(
-    makeSlider(branchesContainer, "armThickness", "Arm thickness", "armThickness", 0.12, 0.6, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "armThickness", "Thickness", "armThickness", 0.12, 0.6, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "branchAngle", "Branch angle", "branchAngle", 10, 60, 1, rebuildSnowflake, (v) => v.toFixed(0))
+    makeSlider(branchesContainer, "branchAngle", "Angle", "branchAngle", 10, 60, 1, rebuildSnowflake, (v) => v.toFixed(0))
   );
   updaters.push(
-    makeSlider(branchesContainer, "branchDecay", "Branch decay", "branchDecay", 0.45, 0.85, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "branchDecay", "Decay", "branchDecay", 0.45, 0.85, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "thicknessDecay", "Thickness decay", "thicknessDecay", 0.4, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "thicknessDecay", "Falloff", "thicknessDecay", 0.4, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "branchJitter", "Branch jitter", "branchJitter", 0, 24, 0.5, rebuildSnowflake, (v) => v.toFixed(1))
+    makeSlider(branchesContainer, "branchJitter", "Jitter", "branchJitter", 0, 24, 0.5, rebuildSnowflake, (v) => v.toFixed(1))
   );
   updaters.push(
-    makeSlider(branchesContainer, "branchProbability", "Branch density", "branchProbability", 0.4, 1, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "branchProbability", "Density", "branchProbability", 0.4, 1, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "plateDensity", "Plate density", "plateDensity", 0.5, 2.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "plateDensity", "Plate", "plateDensity", 0.5, 2.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "tipScale", "Tip scale", "tipScale", 0.25, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(branchesContainer, "tipScale", "Tip", "tipScale", 0.25, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
   const branchesButtons = document.createElement("div");
   branchesButtons.className = "button-stack";
   branchesButtons.innerHTML = `
-    <button id="btn-rand-branches" class="pill-button full">Randomize branches</button>
+    <button id="btn-rand-branches" class="pill-button full">Randomize Branches</button>
   `;
   branchesContainer.appendChild(branchesButtons);
 
   updaters.push(
-    makeSlider(tracersContainer, "tracerDensity", "Tracer density", "tracerDensity", 0.1, 1.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(tracersContainer, "tracerDensity", "Density", "tracerDensity", 0.1, 1.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(tracersContainer, "tracerScale", "Tracer scale", "tracerScale", 0.6, 10, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(tracersContainer, "tracerScale", "Scale", "tracerScale", 0.6, 10, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(tracersContainer, "tracerTaper", "Tracer taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(tracersContainer, "tracerTaper", "Taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(tracersContainer, "tracerLength", "Tracer length", "tracerLength", 0.5, 20, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(tracersContainer, "tracerLength", "Length", "tracerLength", 0.5, 20, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(tracersContainer, "tracerOffset", "Tracer offset", "tracerOffset", 0, 2, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(tracersContainer, "tracerOffset", "Offset", "tracerOffset", 0, 2, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeToggle(tracersContainer, "tracerFlip", "Flip taper", "tracerFlip", rebuildSnowflake)
+    makeToggle(tracersContainer, "tracerFlip", "Flip Taper", "tracerFlip", rebuildSnowflake)
   );
 
   const tracersButtons = document.createElement("div");
   tracersButtons.className = "button-stack";
   tracersButtons.innerHTML = `
-    <button id="btn-rand-tracers" class="pill-button full">Randomize tracers</button>
+    <button id="btn-rand-tracers" class="pill-button full">Randomize Spikes</button>
   `;
   tracersContainer.appendChild(tracersButtons);
 
