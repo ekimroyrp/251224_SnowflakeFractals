@@ -8,15 +8,19 @@ import {
   Color,
   DataTexture,
   DirectionalLight,
+  InstancedMesh,
+  Matrix4,
   Points,
   PointsMaterial,
   PMREMGenerator,
   PerspectiveCamera,
+  Quaternion,
   RGBAFormat,
   RepeatWrapping,
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
+  Vector3,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -28,6 +32,7 @@ import {
   FXAAEffect,
   RenderPass,
 } from "postprocessing";
+import { Body, Box as CBox, Vec3, World, SAPBroadphase } from "cannon-es";
 import { buildSnowflake } from "./snowflake.js";
 
 const params = {
@@ -286,8 +291,10 @@ composer.addPass(renderPass);
 composer.addPass(effectPass);
 
 let snowflake;
+let shatterState = null;
 
 function rebuildSnowflake() {
+  clearShatter();
   const prevRotation = snowflake ? snowflake.rotation.clone() : null;
   if (snowflake) {
     scene.remove(snowflake);
@@ -314,6 +321,136 @@ function handleResize() {
 window.addEventListener("resize", handleResize);
 
 const clock = new Clock();
+const MAX_SHATTER_PIECES = 450;
+
+const tmpMatrix = new Matrix4();
+const tmpPos = new Vector3();
+const tmpQuat = new Quaternion();
+const tmpScale = new Vector3();
+
+function clearShatter() {
+  if (!shatterState) return;
+  shatterState.visuals.forEach((v) => scene.remove(v.mesh));
+  shatterState = null;
+  if (snowflake) snowflake.visible = true;
+}
+
+function triggerShatter() {
+  if (!snowflake || shatterState) return;
+  const instanced = snowflake.children.filter(
+    (c) => c.isInstancedMesh && c.count > 0
+  );
+  if (instanced.length === 0) return;
+
+  const world = new World();
+  world.gravity.set(0, -9.8, 0);
+   world.allowSleep = true;
+  world.broadphase = new SAPBroadphase(world);
+  world.solver.iterations = 7;
+  world.solver.tolerance = 0.001;
+  world.defaultContactMaterial.friction = 0.15;
+  world.defaultContactMaterial.restitution = 0.05;
+
+  const ground = new Body({
+    mass: 0,
+    shape: new CBox(new Vec3(100, 1, 100)),
+    position: new Vec3(0, -12, 0),
+  });
+  world.addBody(ground);
+
+  const visuals = [];
+  const bodies = [];
+
+  const totalPieces = instanced.reduce((sum, m) => sum + m.count, 0);
+  let remaining = MAX_SHATTER_PIECES;
+
+  instanced.forEach((mesh, idx) => {
+    if (remaining <= 0) return;
+    const share = Math.max(
+      1,
+      Math.floor((mesh.count / totalPieces) * MAX_SHATTER_PIECES)
+    );
+    let desired = Math.min(mesh.count, share, remaining);
+    const isLast = idx === instanced.length - 1;
+    if (isLast) desired = Math.min(mesh.count, remaining);
+    if (desired <= 0) return;
+
+    const indices = Array.from({ length: mesh.count }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const chosen = indices.slice(0, desired);
+    const clone = new InstancedMesh(mesh.geometry, mesh.material, chosen.length);
+    clone.instanceMatrix.setUsage(mesh.instanceMatrix.usage);
+    scene.add(clone);
+    for (let i = 0; i < chosen.length; i++) {
+      mesh.getMatrixAt(chosen[i], tmpMatrix);
+      tmpMatrix.decompose(tmpPos, tmpQuat, tmpScale);
+      const half = new Vec3(tmpScale.x * 0.5, tmpScale.y * 0.5, tmpScale.z * 0.5);
+      const shape = new CBox(half);
+      const mass = Math.max(0.05, tmpScale.x * tmpScale.y * tmpScale.z * 0.03);
+      const body = new Body({ mass });
+      body.addShape(shape);
+      body.position.set(tmpPos.x, tmpPos.y, tmpPos.z);
+      body.quaternion.set(tmpQuat.x, tmpQuat.y, tmpQuat.z, tmpQuat.w);
+      body.linearDamping = 0.01;
+      body.angularDamping = 0.01;
+      body.sleepSpeedLimit = 0.2;
+      body.sleepTimeLimit = 0.6;
+      world.addBody(body);
+      bodies.push(body);
+      clone.setMatrixAt(i, tmpMatrix);
+    }
+    clone.instanceMatrix.needsUpdate = true;
+    visuals.push({ mesh: clone, count: chosen.length });
+    remaining -= chosen.length;
+  });
+
+  snowflake.visible = false;
+  shatterState = {
+    world,
+    visuals,
+    bodies,
+    accumulator: 0,
+  };
+}
+
+function updateShatter(delta) {
+  if (!shatterState) return;
+  const step = 1 / 60;
+  shatterState.accumulator += delta;
+  while (shatterState.accumulator >= step) {
+    shatterState.world.step(step);
+    shatterState.accumulator -= step;
+  }
+  let idx = 0;
+  for (const v of shatterState.visuals) {
+    for (let i = 0; i < v.count; i++) {
+      const body = shatterState.bodies[idx++];
+      const shape = body.shapes[0];
+      tmpPos.set(body.position.x, body.position.y, body.position.z);
+      tmpQuat.set(
+        body.quaternion.x,
+        body.quaternion.y,
+        body.quaternion.z,
+        body.quaternion.w
+      );
+      if (shape && shape.halfExtents) {
+        tmpScale.set(
+          shape.halfExtents.x * 2,
+          shape.halfExtents.y * 2,
+          shape.halfExtents.z * 2
+        );
+      } else {
+        tmpScale.set(1, 1, 1);
+      }
+      tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
+      v.mesh.setMatrixAt(i, tmpMatrix);
+    }
+    v.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
 
 function animate() {
   const delta = clock.getDelta();
@@ -325,6 +462,7 @@ function animate() {
   }
   updateSnowfield(snowfield, delta, elapsed);
   updateSnowfield(snowfieldNear, delta, elapsed);
+  updateShatter(delta);
   composer.render(delta);
   requestAnimationFrame(animate);
 }
@@ -474,6 +612,9 @@ function setupGui() {
       controllers.forEach((c) => c.updateDisplay());
       rebuildSnowflake();
     },
+    shatter: () => {
+      triggerShatter();
+    },
     resetCamera: () => {
       camera.position.set(0, 0, 16);
       controls.target.set(0, 0, 0);
@@ -486,6 +627,7 @@ function setupGui() {
   );
   controllers.push(behavior.add(actions, "randomizeBranches").name("Randomize branches"));
   controllers.push(behavior.add(actions, "randomizeTracers").name("Randomize tracers"));
+  controllers.push(behavior.add(actions, "shatter").name("Shatter"));
   controllers.push(behavior.add(actions, "resetCamera").name("Reset camera"));
 
   applyPreset(uiState.preset);
