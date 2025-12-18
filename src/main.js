@@ -695,9 +695,6 @@ function initUI() {
   tracersContainer.appendChild(tracersButtons);
 
   updaters.push(
-    makeSlider(lookContainer, "environmentIntensity", "Env intensity", "environmentIntensity", 0, 3, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
-  );
-  updaters.push(
     makeSlider(lookContainer, "bloomStrength", "Bloom", "bloomStrength", 0, 1, 0.01, () => {
       bloom.intensity = params.bloomStrength;
     }, (v) => v.toFixed(2))
@@ -706,7 +703,6 @@ function initUI() {
     makeSlider(lookContainer, "normalScale", "Surface noise", "normalScale", 0.05, 0.8, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
-  updaters.push(makeToggle(lookContainer, "autoRotate", "Auto rotate", "autoRotate", () => {}));
   updaters.push(
     makeSlider(lookContainer, "spinSpeed", "Spin deg/s", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
   );

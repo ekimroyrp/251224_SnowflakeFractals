@@ -283,7 +283,7 @@ input[type="range"]::-moz-range-track {
 
 .pill-button {
   flex: 1;
-  height: 34px;
+  height: 68px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.07));
