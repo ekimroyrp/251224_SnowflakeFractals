@@ -7,7 +7,11 @@ import {
   MathUtils,
   Mesh,
   MeshPhysicalMaterial,
+  Matrix4,
+  Quaternion,
   Vector2,
+  Vector3,
+  InstancedMesh,
 } from "three";
 
 function mulberry32(seed) {
@@ -39,81 +43,91 @@ function createIceMaterial(params, resources) {
   });
 }
 
-function makeSegmentGeometry(length, thickness) {
-  const geom = new BoxGeometry(length, thickness, thickness, 1, 1, 1);
-  geom.translate(length * 0.5, 0, 0);
-  return geom;
+const scratchPos = new Vector3();
+const scratchScale = new Vector3();
+const scratchQuat = new Quaternion();
+const scratchLocal = new Matrix4();
+const scratchWorld = new Matrix4();
+
+function pushBoxInstance(target, parentMatrix, posX, posY, posZ, scaleX, scaleY, scaleZ, rotZ = 0) {
+  scratchPos.set(posX, posY, posZ);
+  scratchQuat.setFromAxisAngle(new Vector3(0, 0, 1), rotZ);
+  scratchScale.set(scaleX, scaleY, scaleZ);
+  scratchLocal.compose(scratchPos, scratchQuat, scratchScale);
+  scratchWorld.multiplyMatrices(parentMatrix, scratchLocal);
+  target.push(scratchWorld.clone());
 }
 
-function makePlateGeometry(size) {
-  const geom = new BoxGeometry(size * 0.65, size, size * 0.35, 1, 1, 1);
-  geom.translate((size * 0.65) / 2, 0, 0);
-  return geom;
+function pushTracerInstance(target, parentMatrix, posX, posY, posZ, length, radius) {
+  // tracer geometry already rotated to align with X axis
+  pushBoxInstance(target, parentMatrix, posX, posY, posZ, length, radius, radius, 0);
 }
 
-function makeTipGeometry(length, thickness, scale) {
-  const geom = new BoxGeometry(length * scale, thickness * 0.8, thickness * 0.6);
-  geom.translate((length * scale) / 2, 0, 0);
-  return geom;
-}
-
-function addSidePlates(segment, length, thickness, material, rng, params) {
+function addSidePlates(mats, parent, length, thickness, rng, params) {
   const plateCount = Math.max(1, Math.round(length * params.plateDensity));
   const sizeBase = thickness * 0.75;
   for (let i = 0; i < plateCount; i++) {
     const size = sizeBase * MathUtils.lerp(0.7, 1.1, rng());
-    const plate = new Mesh(makePlateGeometry(size), material);
     const u = MathUtils.lerp(0.15, 0.85, rng());
-    plate.position.x = u * length;
     const s = rng() > 0.5 ? 1 : -1;
-    plate.position.y = s * size * 0.35;
-    plate.rotation.z = Math.PI * 0.5 * s * MathUtils.lerp(0.85, 1.1, rng());
-    segment.add(plate);
+    const rot = Math.PI * 0.5 * s * MathUtils.lerp(0.85, 1.1, rng());
+    const posX = u * length;
+    const posY = s * size * 0.35;
+    const scaleX = size * 0.65;
+    const scaleY = size;
+    const scaleZ = size * 0.35;
+    pushBoxInstance(mats.plates, parent, posX, posY, 0, scaleX, scaleY, scaleZ, rot);
   }
 }
 
-function addTip(segment, length, thickness, material, params) {
-  const tip = new Mesh(
-    makeTipGeometry(length * params.tipScale, thickness, 1),
-    material
+function addTip(mats, parent, length, thickness, params) {
+  const tipLength = Math.max(length * params.tipScale, thickness * 0.6);
+  const posX = length + tipLength * 0.5;
+  pushBoxInstance(
+    mats.tips,
+    parent,
+    posX,
+    0,
+    0,
+    tipLength,
+    thickness * 0.8,
+    thickness * 0.6,
+    0
   );
-  tip.position.x = length;
-  segment.add(tip);
 }
 
-function addTracers(segment, length, thickness, material, rng, params) {
+function addTracers(mats, parent, length, thickness, rng, params) {
   const tracerCount = Math.max(1, Math.round(length * params.tracerDensity));
   const height = Math.max(thickness * params.tracerLength, thickness * 0.4);
   for (let i = 0; i < tracerCount; i++) {
     const u = MathUtils.lerp(0.12, 0.95, (i + 0.35) / (tracerCount + 0.7));
-    const base = thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rng());
-    const tracer = new Mesh(
-      new CylinderGeometry(
-        base * params.tracerTaper,
-        base,
-        height,
-        6,
-        1,
-        false
-      ),
-      material
-    );
-    tracer.rotation.z = Math.PI / 2;
-    tracer.position.x = u * length;
-    tracer.position.y = (rng() - 0.5) * thickness * params.tracerOffset;
-    segment.add(tracer);
+    const radius =
+      thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rng());
+    const posX = u * length;
+    const posY = (rng() - 0.5) * thickness * params.tracerOffset;
+    pushTracerInstance(mats.tracers, parent, posX, posY, 0, height, radius);
   }
 }
 
-function growSegment(group, depth, length, thickness, material, rng, params) {
-  const segment = new Mesh(makeSegmentGeometry(length, thickness), material);
-  group.add(segment);
+function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
+  // segment core
+  pushBoxInstance(
+    mats.segments,
+    parentMatrix,
+    length * 0.5,
+    0,
+    0,
+    length,
+    thickness,
+    thickness,
+    0
+  );
 
-  addSidePlates(segment, length, thickness, material, rng, params);
-  addTracers(segment, length, thickness, material, rng, params);
+  addSidePlates(mats, parentMatrix, length, thickness, rng, params);
+  addTracers(mats, parentMatrix, length, thickness, rng, params);
 
   if (depth <= 1) {
-    addTip(segment, length, thickness, material, params);
+    addTip(mats, parentMatrix, length, thickness, params);
     return;
   }
 
@@ -125,40 +139,44 @@ function growSegment(group, depth, length, thickness, material, rng, params) {
 
   let spawned = 0;
   for (let i = 0; i < branchCount; i++) {
-    const child = new Group();
     const jitter = (rng() - 0.5) * 2 * params.branchJitter;
     const sign = i === 0 ? 1 : -1;
     if (rng() > params.branchProbability && spawned > 0) {
       continue;
     }
     const angle = MathUtils.degToRad(params.branchAngle * sign + jitter);
-    child.position.x = offset + (rng() - 0.5) * 0.12 * length;
-    child.position.y = (rng() - 0.5) * 0.08 * length;
-    child.rotation.z = angle;
-    segment.add(child);
+    scratchLocal.makeTranslation(
+      offset + (rng() - 0.5) * 0.12 * length,
+      (rng() - 0.5) * 0.08 * length,
+      0
+    );
+    scratchWorld.makeRotationZ(angle);
+    scratchLocal.multiply(scratchWorld);
+    scratchWorld.multiplyMatrices(parentMatrix, scratchLocal);
     spawned++;
-    growSegment(
-      child,
+    growBranch(
+      mats,
+      scratchWorld.clone(),
       depth - 1,
       childLength,
       childThickness,
-      material,
       rng,
       params
     );
   }
+
   if (spawned === 0) {
-    const fallback = new Group();
     const angle = MathUtils.degToRad(params.branchAngle);
-    fallback.position.x = offset;
-    fallback.rotation.z = angle;
-    segment.add(fallback);
-    growSegment(
-      fallback,
+    scratchLocal.makeTranslation(offset, 0, 0);
+    scratchWorld.makeRotationZ(angle);
+    scratchLocal.multiply(scratchWorld);
+    scratchWorld.multiplyMatrices(parentMatrix, scratchLocal);
+    growBranch(
+      mats,
+      scratchWorld.clone(),
       depth - 1,
       childLength,
       childThickness,
-      material,
       rng,
       params
     );
@@ -181,23 +199,75 @@ export function buildSnowflake(params, resources = {}) {
   const snowflake = new Group();
   snowflake.name = "snowflake";
 
-  const arm = new Group();
-  growSegment(
-    arm,
+  const baseGeometries = {
+    segment: new BoxGeometry(1, 1, 1),
+    plate: new BoxGeometry(1, 1, 1),
+    tip: new BoxGeometry(1, 1, 1),
+    tracer: new CylinderGeometry(params.tracerTaper, 1, 1, 6, 1, false),
+  };
+  baseGeometries.tracer.rotateZ(Math.PI / 2);
+
+  const armMatrices = {
+    segments: [],
+    plates: [],
+    tips: [],
+    tracers: [],
+  };
+
+  const identity = new Matrix4();
+  growBranch(
+    armMatrices,
+    identity,
     params.recursionDepth,
     params.armLength,
     params.armThickness,
-    material,
     rng,
     params
   );
 
+  const finalMatrices = {
+    segments: [],
+    plates: [],
+    tips: [],
+    tracers: [],
+  };
+
   const symmetry = Math.max(3, Math.floor(params.symmetry));
   for (let i = 0; i < symmetry; i++) {
-    const clone = arm.clone(true);
-    clone.rotation.z = (Math.PI * 2 * i) / symmetry;
-    snowflake.add(clone);
+    const rot = new Matrix4().makeRotationZ((Math.PI * 2 * i) / symmetry);
+    for (const m of armMatrices.segments) {
+      finalMatrices.segments.push(rot.clone().multiply(m));
+    }
+    for (const m of armMatrices.plates) {
+      finalMatrices.plates.push(rot.clone().multiply(m));
+    }
+    for (const m of armMatrices.tips) {
+      finalMatrices.tips.push(rot.clone().multiply(m));
+    }
+    for (const m of armMatrices.tracers) {
+      finalMatrices.tracers.push(rot.clone().multiply(m));
+    }
   }
+
+  function makeInstanced(geom, mats) {
+    if (mats.length === 0) return null;
+    const mesh = new InstancedMesh(geom, material, mats.length);
+    for (let i = 0; i < mats.length; i++) {
+      mesh.setMatrixAt(i, mats[i]);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  }
+
+  const segmentInst = makeInstanced(baseGeometries.segment, finalMatrices.segments);
+  const plateInst = makeInstanced(baseGeometries.plate, finalMatrices.plates);
+  const tipInst = makeInstanced(baseGeometries.tip, finalMatrices.tips);
+  const tracerInst = makeInstanced(baseGeometries.tracer, finalMatrices.tracers);
+
+  if (segmentInst) snowflake.add(segmentInst);
+  if (plateInst) snowflake.add(plateInst);
+  if (tipInst) snowflake.add(tipInst);
+  if (tracerInst) snowflake.add(tracerInst);
 
   snowflake.add(createHub(material, params.armThickness));
 
