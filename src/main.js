@@ -714,12 +714,12 @@ function initUI() {
   });
 
   const buttonRow = document.createElement("div");
-  buttonRow.className = "button-grid";
+  buttonRow.className = "button-stack";
   buttonRow.innerHTML = `
-    <button id="btn-rand-branches" class="pill-button">Randomize branches</button>
-    <button id="btn-rand-tracers" class="pill-button">Randomize tracers</button>
-    <button id="btn-shatter" class="pill-button">Shatter</button>
-    <button id="btn-reset-camera" class="pill-button">Reset camera</button>
+    <button id="btn-rand-branches" class="pill-button full">Randomize branches</button>
+    <button id="btn-rand-tracers" class="pill-button full">Randomize tracers</button>
+    <button id="btn-shatter" class="pill-button full">Shatter</button>
+    <button id="btn-reset-camera" class="pill-button full">Reset camera</button>
   `;
   behaviorContainer.appendChild(buttonRow);
 
