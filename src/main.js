@@ -36,15 +36,15 @@ import { buildSnowflake } from "./snowflake.js";
 
 const params = {
   recursionDepth: 5,
-  armLength: 7,
-  armThickness: 0.32,
-  branchAngle: 42,
+  armLength: 10.1,
+  armThickness: 0.57,
+  branchAngle: 53,
   branchDecay: 0.78,
-  thicknessDecay: 0.72,
-  branchJitter: 16,
-  branchProbability: 0.95,
-  plateDensity: 2.3,
-  tipScale: 0.35,
+  thicknessDecay: 0.64,
+  branchJitter: 10.5,
+  branchProbability: 0.7,
+  plateDensity: 1.85,
+  tipScale: 0.29,
   symmetry: 6,
   seed: 195323,
   autoRotate: true,
@@ -52,11 +52,11 @@ const params = {
   bloomStrength: 0.65,
   environmentIntensity: 1.65,
   normalScale: 0.42,
-  tracerDensity: 0.8,
-  tracerScale: 1.55,
-  tracerTaper: 0.48,
-  tracerLength: 1.9,
-  tracerOffset: 1.35,
+  tracerDensity: 0.35,
+  tracerScale: 3.05,
+  tracerTaper: 0.24,
+  tracerLength: 7.7,
+  tracerOffset: 0.15,
   snowfall: true,
   shatter: false,
   tracerFlip: false,
@@ -257,7 +257,7 @@ const camera = new PerspectiveCamera(
   0.1,
   200
 );
-camera.position.set(0, 0, 48);
+camera.position.set(0, 0, 80);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
