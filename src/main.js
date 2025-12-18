@@ -185,7 +185,7 @@ controls.enableDamping = true;
 controls.enablePan = true;
 controls.enableZoom = true;
 controls.minDistance = 3;
-controls.maxDistance = 50;
+controls.maxDistance = 100;
 
 scene.add(new AmbientLight(0x7eb6ff, 0.35));
 
