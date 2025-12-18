@@ -323,7 +323,7 @@ window.addEventListener("resize", handleResize);
 
 const clock = new Clock();
 const MAX_SHATTER_PIECES = 450;
-const SHATTER_MAX_TIME = 5;
+const SHATTER_MAX_TIME = 20;
 
 const tmpMatrix = new Matrix4();
 const tmpPos = new Vector3();
