@@ -48,6 +48,7 @@ const scratchScale = new Vector3();
 const scratchQuat = new Quaternion();
 const scratchLocal = new Matrix4();
 const scratchWorld = new Matrix4();
+const yAxis = new Vector3(0, 1, 0);
 
 function pushBoxInstance(target, parentMatrix, posX, posY, posZ, scaleX, scaleY, scaleZ, rotZ = 0) {
   scratchPos.set(posX, posY, posZ);
@@ -59,8 +60,12 @@ function pushBoxInstance(target, parentMatrix, posX, posY, posZ, scaleX, scaleY,
 }
 
 function pushTracerInstance(target, parentMatrix, posX, posY, posZ, length, radius) {
-  // tracer geometry already rotated to align with X axis
-  pushBoxInstance(target, parentMatrix, posX, posY, posZ, length, radius, radius, 0);
+  scratchPos.set(posX, posY, posZ);
+  scratchQuat.identity();
+  scratchScale.set(length, radius, radius);
+  scratchLocal.compose(scratchPos, scratchQuat, scratchScale);
+  scratchWorld.multiplyMatrices(parentMatrix, scratchLocal);
+  target.push(scratchWorld.clone());
 }
 
 function addSidePlates(mats, parent, length, thickness, rng, params) {
@@ -105,7 +110,18 @@ function addTracers(mats, parent, length, thickness, rng, params) {
       thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rng());
     const posX = u * length;
     const posY = (rng() - 0.5) * thickness * params.tracerOffset;
-    pushTracerInstance(mats.tracers, parent, posX, posY, 0, height, radius);
+    const flip = params.tracerFlip === true;
+    if (flip) {
+      // rotate 180 around Y to swap tapered end along the X-aligned tracer axis
+      scratchPos.set(posX, posY, 0);
+      scratchQuat.setFromAxisAngle(yAxis, Math.PI);
+      scratchScale.set(height, radius, radius);
+      scratchLocal.compose(scratchPos, scratchQuat, scratchScale);
+      scratchWorld.multiplyMatrices(parent, scratchLocal);
+      mats.tracers.push(scratchWorld.clone());
+    } else {
+      pushTracerInstance(mats.tracers, parent, posX, posY, 0, height, radius);
+    }
   }
 }
 

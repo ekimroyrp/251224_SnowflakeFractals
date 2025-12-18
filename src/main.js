@@ -54,6 +54,7 @@ const params = {
   tracerLength: 2.2,
   tracerOffset: 1.2,
   snowfall: true,
+  tracerFlip: false,
 };
 
 const presets = {
@@ -287,10 +288,14 @@ composer.addPass(effectPass);
 let snowflake;
 
 function rebuildSnowflake() {
+  const prevRotation = snowflake ? snowflake.rotation.clone() : null;
   if (snowflake) {
     scene.remove(snowflake);
   }
   snowflake = buildSnowflake(params, resources);
+  if (prevRotation) {
+    snowflake.rotation.copy(prevRotation);
+  }
   scene.add(snowflake);
 }
 
@@ -401,6 +406,9 @@ function setupGui() {
   );
   controllers.push(
     tracersFolder.add(params, "tracerOffset", 0, 2, 0.05).name("Tracer offset").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    tracersFolder.add(params, "tracerFlip").name("Flip taper").onChange(rebuildSnowflake)
   );
 
   const look = gui.addFolder("Look");
