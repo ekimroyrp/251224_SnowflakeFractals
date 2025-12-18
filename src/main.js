@@ -257,7 +257,7 @@ const camera = new PerspectiveCamera(
   0.1,
   200
 );
-camera.position.set(0, 0, 16);
+camera.position.set(0, 0, 48);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -336,7 +336,12 @@ function clearShatter() {
 }
 
 function triggerShatter() {
-  if (!snowflake || shatterState) return;
+  if (!snowflake) return;
+  if (shatterState) {
+    clearShatter();
+    snowflake.visible = true;
+    return;
+  }
   const instanced = snowflake.children.filter(
     (c) => c.isInstancedMesh && c.count > 0
   );
