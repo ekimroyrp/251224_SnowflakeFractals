@@ -176,6 +176,11 @@ html {
 
 .toggle-row {
   align-items: center;
+  margin-bottom: 12px;
+}
+
+.toggle-row:last-child {
+  margin-bottom: 0;
 }
 
 .value {
