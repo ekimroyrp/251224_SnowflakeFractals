@@ -215,7 +215,7 @@ html {
 }
 
 .switch input:checked + .slider {
-  background: linear-gradient(135deg, #00a2ff, #5dd0ff);
+  background: linear-gradient(135deg, #0060b8, #2293e6);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -232,8 +232,8 @@ input[type="range"] {
   border-radius: 999px;
   background: linear-gradient(
       90deg,
-      #00a2ff 0%,
-      #5dd0ff var(--range-progress, 50%),
+      #0060b8 0%,
+      #2293e6 var(--range-progress, 50%),
       rgba(255, 255, 255, 0.12) var(--range-progress, 50%),
       rgba(255, 255, 255, 0.12) 100%
     );
