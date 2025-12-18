@@ -81,11 +81,36 @@ function addTip(segment, length, thickness, material, params) {
   segment.add(tip);
 }
 
+function addTracers(segment, length, thickness, material, rng, params) {
+  const tracerCount = Math.max(1, Math.round(length * params.tracerDensity));
+  const height = Math.max(thickness * params.tracerLength, thickness * 0.4);
+  for (let i = 0; i < tracerCount; i++) {
+    const u = MathUtils.lerp(0.12, 0.95, (i + 0.35) / (tracerCount + 0.7));
+    const base = thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rng());
+    const tracer = new Mesh(
+      new CylinderGeometry(
+        base * params.tracerTaper,
+        base,
+        height,
+        6,
+        1,
+        false
+      ),
+      material
+    );
+    tracer.rotation.z = Math.PI / 2;
+    tracer.position.x = u * length;
+    tracer.position.y = (rng() - 0.5) * thickness * params.tracerOffset;
+    segment.add(tracer);
+  }
+}
+
 function growSegment(group, depth, length, thickness, material, rng, params) {
   const segment = new Mesh(makeSegmentGeometry(length, thickness), material);
   group.add(segment);
 
   addSidePlates(segment, length, thickness, material, rng, params);
+  addTracers(segment, length, thickness, material, rng, params);
 
   if (depth <= 1) {
     addTip(segment, length, thickness, material, params);

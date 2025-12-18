@@ -44,6 +44,11 @@ const params = {
   bloomStrength: 0.52,
   environmentIntensity: 1.4,
   normalScale: 0.32,
+  tracerDensity: 0.5,
+  tracerScale: 1.4,
+  tracerTaper: 0.55,
+  tracerLength: 2.2,
+  tracerOffset: 1.2,
 };
 
 const presets = {
@@ -64,42 +69,57 @@ const presets = {
     bloomStrength: 0.52,
     environmentIntensity: 1.4,
     normalScale: 0.32,
+    tracerDensity: 0.5,
+    tracerScale: 1.4,
+    tracerTaper: 0.55,
+    tracerLength: 2.2,
+    tracerOffset: 1.2,
   },
   "Needle Star": {
-    recursionDepth: 3,
-    armLength: 9,
-    armThickness: 0.22,
-    branchAngle: 24,
-    branchDecay: 0.6,
-    thicknessDecay: 0.68,
-    branchJitter: 6,
-    branchProbability: 0.6,
-    plateDensity: 1.15,
-    tipScale: 0.65,
+    recursionDepth: 2,
+    armLength: 11,
+    armThickness: 0.18,
+    branchAngle: 18,
+    branchDecay: 0.55,
+    thicknessDecay: 0.6,
+    branchJitter: 4,
+    branchProbability: 0.45,
+    plateDensity: 0.85,
+    tipScale: 0.88,
     symmetry: 6,
     seed: 7421,
-    spinSpeed: 4,
-    bloomStrength: 0.45,
-    environmentIntensity: 1.55,
-    normalScale: 0.26,
+    spinSpeed: 3,
+    bloomStrength: 0.35,
+    environmentIntensity: 1.75,
+    normalScale: 0.18,
+    tracerDensity: 0.35,
+    tracerScale: 1.3,
+    tracerTaper: 0.5,
+    tracerLength: 2.6,
+    tracerOffset: 1.1,
   },
   "Chaotic Crystal": {
     recursionDepth: 5,
-    armLength: 7.2,
-    armThickness: 0.3,
-    branchAngle: 38,
-    branchDecay: 0.72,
+    armLength: 7,
+    armThickness: 0.32,
+    branchAngle: 42,
+    branchDecay: 0.78,
     thicknessDecay: 0.72,
-    branchJitter: 14,
-    branchProbability: 0.9,
-    plateDensity: 1.9,
-    tipScale: 0.42,
+    branchJitter: 16,
+    branchProbability: 0.95,
+    plateDensity: 2.3,
+    tipScale: 0.35,
     symmetry: 6,
     seed: 195323,
-    spinSpeed: 7,
-    bloomStrength: 0.6,
-    environmentIntensity: 1.6,
-    normalScale: 0.36,
+    spinSpeed: 8,
+    bloomStrength: 0.65,
+    environmentIntensity: 1.65,
+    normalScale: 0.42,
+    tracerDensity: 0.8,
+    tracerScale: 1.55,
+    tracerTaper: 0.48,
+    tracerLength: 1.9,
+    tracerOffset: 1.35,
   },
 };
 
@@ -237,82 +257,106 @@ function setupGui() {
     width: 320,
   });
 
+  const controllers = [];
+
   function applyPreset(name) {
     const preset = presets[name];
     if (!preset) return;
     Object.assign(params, preset);
     uiState.preset = name;
-    gui.updateDisplay();
+    controllers.forEach((c) => c.updateDisplay());
     rebuildSnowflake();
   }
 
   const presetFolder = gui.addFolder("Presets");
-  presetFolder
+  const presetCtrl = presetFolder
     .add(uiState, "preset", Object.keys(presets))
     .name("Preset")
-    .onChange(applyPreset);
+    .onChange((value) => applyPreset(value));
+  controllers.push(presetCtrl);
 
   const geo = gui.addFolder("Geometry");
-  geo.add(params, "recursionDepth", 1, 6, 1)
-    .name("Depth")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "symmetry", 3, 12, 1)
-    .name("Symmetry")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "armLength", 4, 12, 0.1)
-    .name("Arm length")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "armThickness", 0.12, 0.6, 0.01)
-    .name("Arm thickness")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "branchAngle", 10, 60, 1)
-    .name("Branch angle")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "branchDecay", 0.45, 0.85, 0.01)
-    .name("Branch decay")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "thicknessDecay", 0.4, 0.9, 0.01)
-    .name("Thickness decay")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "branchJitter", 0, 24, 0.5)
-    .name("Branch jitter")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "branchProbability", 0.4, 1, 0.01)
-    .name("Branch density")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "plateDensity", 0.5, 2.5, 0.05)
-    .name("Plate density")
-    .onFinishChange(rebuildSnowflake);
-  geo.add(params, "tipScale", 0.25, 0.9, 0.01)
-    .name("Tip scale")
-    .onFinishChange(rebuildSnowflake);
+  controllers.push(
+    geo.add(params, "recursionDepth", 1, 6, 1).name("Depth").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "symmetry", 3, 12, 1).name("Symmetry").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "armLength", 4, 12, 0.1).name("Arm length").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "armThickness", 0.12, 0.6, 0.01).name("Arm thickness").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "branchAngle", 10, 60, 1).name("Branch angle").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "branchDecay", 0.45, 0.85, 0.01).name("Branch decay").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "thicknessDecay", 0.4, 0.9, 0.01).name("Thickness decay").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "branchJitter", 0, 24, 0.5).name("Branch jitter").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "branchProbability", 0.4, 1, 0.01).name("Branch density").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "plateDensity", 0.5, 2.5, 0.05).name("Plate density").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tipScale", 0.25, 0.9, 0.01).name("Tip scale").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tracerDensity", 0.1, 1.5, 0.05).name("Tracer density").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tracerScale", 0.6, 10, 0.05).name("Tracer scale").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tracerTaper", 0.2, 1, 0.02).name("Tracer taper").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tracerLength", 0.5, 20, 0.05).name("Tracer length").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    geo.add(params, "tracerOffset", 0, 2, 0.05).name("Tracer offset").onFinishChange(rebuildSnowflake)
+  );
 
   const look = gui.addFolder("Look");
-  look
-    .add(params, "environmentIntensity", 0, 3, 0.05)
-    .name("Env intensity")
-    .onFinishChange(rebuildSnowflake);
-  look
-    .add(params, "bloomStrength", 0, 1, 0.01)
-    .name("Bloom")
-    .onChange((v) => {
-      bloom.intensity = v;
-    });
-  look
-    .add(params, "normalScale", 0.05, 0.8, 0.01)
-    .name("Surface noise")
-    .onFinishChange(rebuildSnowflake);
+  controllers.push(
+    look
+      .add(params, "environmentIntensity", 0, 3, 0.05)
+      .name("Env intensity")
+      .onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(
+    look
+      .add(params, "bloomStrength", 0, 1, 0.01)
+      .name("Bloom")
+      .onChange((v) => {
+        bloom.intensity = v;
+      })
+  );
+  controllers.push(
+    look
+      .add(params, "normalScale", 0.05, 0.8, 0.01)
+      .name("Surface noise")
+      .onFinishChange(rebuildSnowflake)
+  );
 
   const behavior = gui.addFolder("Behavior");
-  behavior.add(params, "autoRotate").name("Auto rotate");
-  behavior
-    .add(params, "spinSpeed", -30, 30, 0.1)
-    .name("Spin deg/s");
+  controllers.push(behavior.add(params, "autoRotate").name("Auto rotate"));
+  controllers.push(
+    behavior.add(params, "spinSpeed", -30, 30, 0.1).name("Spin deg/s")
+  );
 
   const actions = {
     randomizeSeed: () => {
       params.seed = Math.floor(Math.random() * 1_000_000);
-      gui.updateDisplay();
+      controllers.forEach((c) => c.updateDisplay());
       rebuildSnowflake();
     },
     resetCamera: () => {
@@ -322,9 +366,11 @@ function setupGui() {
     },
   };
 
-  behavior.add(params, "seed", 1, 1_000_000, 1).name("Seed").onFinishChange(rebuildSnowflake);
-  behavior.add(actions, "randomizeSeed").name("Randomize seed");
-  behavior.add(actions, "resetCamera").name("Reset camera");
+  controllers.push(
+    behavior.add(params, "seed", 1, 1_000_000, 1).name("Seed").onFinishChange(rebuildSnowflake)
+  );
+  controllers.push(behavior.add(actions, "randomizeSeed").name("Randomize seed"));
+  controllers.push(behavior.add(actions, "resetCamera").name("Reset camera"));
 
   applyPreset(uiState.preset);
 }
