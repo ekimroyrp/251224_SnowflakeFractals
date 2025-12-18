@@ -4,13 +4,18 @@ import {
   AmbientLight,
   Clock,
   Color,
+  DataTexture,
   DirectionalLight,
+  PMREMGenerator,
   PerspectiveCamera,
+  RGBAFormat,
+  RepeatWrapping,
   Scene,
   SRGBColorSpace,
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import GUI from "lil-gui";
 import {
   BloomEffect,
@@ -22,19 +27,106 @@ import {
 import { buildSnowflake } from "./snowflake.js";
 
 const params = {
-  recursionDepth: 3,
-  armLength: 7.5,
-  armThickness: 0.28,
+  recursionDepth: 4,
+  armLength: 8,
+  armThickness: 0.26,
   branchAngle: 32,
   branchDecay: 0.68,
   thicknessDecay: 0.7,
   branchJitter: 8,
+  branchProbability: 0.82,
+  plateDensity: 1.6,
+  tipScale: 0.45,
   symmetry: 6,
   seed: 1337,
   autoRotate: true,
   spinSpeed: 6,
   bloomStrength: 0.52,
   environmentIntensity: 1.4,
+  normalScale: 0.32,
+};
+
+const presets = {
+  "Classic Hex": {
+    recursionDepth: 4,
+    armLength: 8,
+    armThickness: 0.26,
+    branchAngle: 32,
+    branchDecay: 0.68,
+    thicknessDecay: 0.7,
+    branchJitter: 8,
+    branchProbability: 0.82,
+    plateDensity: 1.6,
+    tipScale: 0.45,
+    symmetry: 6,
+    seed: 1337,
+    spinSpeed: 6,
+    bloomStrength: 0.52,
+    environmentIntensity: 1.4,
+    normalScale: 0.32,
+  },
+  "Needle Star": {
+    recursionDepth: 3,
+    armLength: 9,
+    armThickness: 0.22,
+    branchAngle: 24,
+    branchDecay: 0.6,
+    thicknessDecay: 0.68,
+    branchJitter: 6,
+    branchProbability: 0.6,
+    plateDensity: 1.15,
+    tipScale: 0.65,
+    symmetry: 6,
+    seed: 7421,
+    spinSpeed: 4,
+    bloomStrength: 0.45,
+    environmentIntensity: 1.55,
+    normalScale: 0.26,
+  },
+  "Chaotic Crystal": {
+    recursionDepth: 5,
+    armLength: 7.2,
+    armThickness: 0.3,
+    branchAngle: 38,
+    branchDecay: 0.72,
+    thicknessDecay: 0.72,
+    branchJitter: 14,
+    branchProbability: 0.9,
+    plateDensity: 1.9,
+    tipScale: 0.42,
+    symmetry: 6,
+    seed: 195323,
+    spinSpeed: 7,
+    bloomStrength: 0.6,
+    environmentIntensity: 1.6,
+    normalScale: 0.36,
+  },
+};
+
+const uiState = {
+  preset: "Classic Hex",
+};
+
+function createNormalNoiseTexture(size = 128, amplitude = 14) {
+  const data = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    const nx = 128 + (Math.random() * 2 - 1) * amplitude;
+    const ny = 128 + (Math.random() * 2 - 1) * amplitude;
+    const idx = i * 4;
+    data[idx] = Math.max(0, Math.min(255, nx));
+    data[idx + 1] = Math.max(0, Math.min(255, ny));
+    data[idx + 2] = 255;
+    data[idx + 3] = 255;
+  }
+  const tex = new DataTexture(data, size, size, RGBAFormat);
+  tex.wrapS = RepeatWrapping;
+  tex.wrapT = RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+const resources = {
+  normalMap: createNormalNoiseTexture(),
 };
 
 const canvas = document.getElementById("scene-canvas");
@@ -52,8 +144,13 @@ if ("outputColorSpace" in renderer) {
   renderer.outputColorSpace = SRGBColorSpace;
 }
 
+const pmrem = new PMREMGenerator(renderer);
+const envTexture = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
 const scene = new Scene();
+scene.environment = envTexture;
 scene.background = new Color(0x0b1323);
+pmrem.dispose();
 
 const camera = new PerspectiveCamera(
   45,
@@ -100,7 +197,7 @@ function rebuildSnowflake() {
   if (snowflake) {
     scene.remove(snowflake);
   }
-  snowflake = buildSnowflake(params);
+  snowflake = buildSnowflake(params, resources);
   scene.add(snowflake);
 }
 
@@ -140,6 +237,21 @@ function setupGui() {
     width: 320,
   });
 
+  function applyPreset(name) {
+    const preset = presets[name];
+    if (!preset) return;
+    Object.assign(params, preset);
+    uiState.preset = name;
+    gui.updateDisplay();
+    rebuildSnowflake();
+  }
+
+  const presetFolder = gui.addFolder("Presets");
+  presetFolder
+    .add(uiState, "preset", Object.keys(presets))
+    .name("Preset")
+    .onChange(applyPreset);
+
   const geo = gui.addFolder("Geometry");
   geo.add(params, "recursionDepth", 1, 6, 1)
     .name("Depth")
@@ -165,6 +277,15 @@ function setupGui() {
   geo.add(params, "branchJitter", 0, 24, 0.5)
     .name("Branch jitter")
     .onFinishChange(rebuildSnowflake);
+  geo.add(params, "branchProbability", 0.4, 1, 0.01)
+    .name("Branch density")
+    .onFinishChange(rebuildSnowflake);
+  geo.add(params, "plateDensity", 0.5, 2.5, 0.05)
+    .name("Plate density")
+    .onFinishChange(rebuildSnowflake);
+  geo.add(params, "tipScale", 0.25, 0.9, 0.01)
+    .name("Tip scale")
+    .onFinishChange(rebuildSnowflake);
 
   const look = gui.addFolder("Look");
   look
@@ -177,6 +298,10 @@ function setupGui() {
     .onChange((v) => {
       bloom.intensity = v;
     });
+  look
+    .add(params, "normalScale", 0.05, 0.8, 0.01)
+    .name("Surface noise")
+    .onFinishChange(rebuildSnowflake);
 
   const behavior = gui.addFolder("Behavior");
   behavior.add(params, "autoRotate").name("Auto rotate");
@@ -190,10 +315,18 @@ function setupGui() {
       gui.updateDisplay();
       rebuildSnowflake();
     },
+    resetCamera: () => {
+      camera.position.set(0, 0, 16);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    },
   };
 
   behavior.add(params, "seed", 1, 1_000_000, 1).name("Seed").onFinishChange(rebuildSnowflake);
   behavior.add(actions, "randomizeSeed").name("Randomize seed");
+  behavior.add(actions, "resetCamera").name("Reset camera");
+
+  applyPreset(uiState.preset);
 }
 
 setupGui();
