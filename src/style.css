@@ -118,14 +118,14 @@ html {
 }
 
 .section-title::after {
-  content: "▾";
+  content: "▴";
   font-size: 12px;
   opacity: 0.8;
   transition: transform 120ms ease;
 }
 
 .section.collapsed .section-title::after {
-  transform: rotate(-90deg);
+  transform: rotate(180deg);
 }
 
 .section-content {
