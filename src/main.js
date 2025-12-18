@@ -342,7 +342,10 @@ function triggerShatter() {
     return;
   }
   const instanced = snowflake.children.filter(
-    (c) => c.isInstancedMesh && c.count > 0
+    (c) =>
+      c.isInstancedMesh &&
+      c.count > 0 &&
+      (c.userData.part === "segments" || c.userData.part === "tracers")
   );
   if (instanced.length === 0) return;
 

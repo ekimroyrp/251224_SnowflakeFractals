@@ -265,9 +265,11 @@ export function buildSnowflake(params, resources = {}) {
     }
   }
 
-  function makeInstanced(geom, mats) {
+  function makeInstanced(geom, mats, type) {
     if (mats.length === 0) return null;
     const mesh = new InstancedMesh(geom, material, mats.length);
+    mesh.name = type || "";
+    mesh.userData.part = type;
     for (let i = 0; i < mats.length; i++) {
       mesh.setMatrixAt(i, mats[i]);
     }
@@ -275,10 +277,10 @@ export function buildSnowflake(params, resources = {}) {
     return mesh;
   }
 
-  const segmentInst = makeInstanced(baseGeometries.segment, finalMatrices.segments);
-  const plateInst = makeInstanced(baseGeometries.plate, finalMatrices.plates);
-  const tipInst = makeInstanced(baseGeometries.tip, finalMatrices.tips);
-  const tracerInst = makeInstanced(baseGeometries.tracer, finalMatrices.tracers);
+  const segmentInst = makeInstanced(baseGeometries.segment, finalMatrices.segments, "segments");
+  const plateInst = makeInstanced(baseGeometries.plate, finalMatrices.plates, "plates");
+  const tipInst = makeInstanced(baseGeometries.tip, finalMatrices.tips, "tips");
+  const tracerInst = makeInstanced(baseGeometries.tracer, finalMatrices.tracers, "tracers");
 
   if (segmentInst) snowflake.add(segmentInst);
   if (plateInst) snowflake.add(plateInst);
