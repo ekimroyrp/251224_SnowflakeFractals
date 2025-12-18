@@ -328,7 +328,11 @@ input[type="range"]::-moz-range-track {
 .button-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+}
+
+.spikes-buttons {
+  margin-top: 14px;
 }
 
 .pill-button.full {
