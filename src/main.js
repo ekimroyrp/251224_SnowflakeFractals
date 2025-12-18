@@ -35,28 +35,28 @@ import { Body, Box as CBox, Vec3, World, SAPBroadphase } from "cannon-es";
 import { buildSnowflake } from "./snowflake.js";
 
 const params = {
-  recursionDepth: 4,
-  armLength: 8,
-  armThickness: 0.26,
-  branchAngle: 32,
-  branchDecay: 0.68,
-  thicknessDecay: 0.7,
-  branchJitter: 8,
-  branchProbability: 0.82,
-  plateDensity: 1.6,
-  tipScale: 0.45,
+  recursionDepth: 5,
+  armLength: 7,
+  armThickness: 0.32,
+  branchAngle: 42,
+  branchDecay: 0.78,
+  thicknessDecay: 0.72,
+  branchJitter: 16,
+  branchProbability: 0.95,
+  plateDensity: 2.3,
+  tipScale: 0.35,
   symmetry: 6,
-  seed: 1337,
+  seed: 195323,
   autoRotate: true,
-  spinSpeed: 6,
-  bloomStrength: 0.52,
-  environmentIntensity: 1.4,
-  normalScale: 0.32,
-  tracerDensity: 0.5,
-  tracerScale: 1.4,
-  tracerTaper: 0.55,
-  tracerLength: 2.2,
-  tracerOffset: 1.2,
+  spinSpeed: 8,
+  bloomStrength: 0.65,
+  environmentIntensity: 1.65,
+  normalScale: 0.42,
+  tracerDensity: 0.8,
+  tracerScale: 1.55,
+  tracerTaper: 0.48,
+  tracerLength: 1.9,
+  tracerOffset: 1.35,
   snowfall: true,
   tracerFlip: false,
 };
@@ -134,7 +134,7 @@ const presets = {
 };
 
 const uiState = {
-  preset: "Classic Hex",
+  preset: "Chaotic Crystal",
 };
 
 function createNormalNoiseTexture(size = 128, amplitude = 14) {
@@ -480,15 +480,6 @@ function initUI() {
       <div id="ui-handle"></div>
       <div class="ui-body">
         <div class="section">
-          <div class="section-title">Presets</div>
-          <div class="section-content">
-            <div class="control-row">
-              <label for="preset-select">Preset</label>
-              <select id="preset-select" class="pill-select"></select>
-            </div>
-          </div>
-        </div>
-        <div class="section">
           <div class="section-title">Branches</div>
           <div id="branches-controls" class="section-content"></div>
         </div>
@@ -761,29 +752,6 @@ function initUI() {
     camera.position.set(0, 0, 48);
     controls.target.set(0, 0, 0);
     controls.update();
-  });
-
-  const presetSelect = document.getElementById("preset-select");
-  Object.keys(presets).forEach((name) => {
-    const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    presetSelect.appendChild(opt);
-  });
-
-  const applyPreset = (name) => {
-    const preset = presets[name];
-    if (!preset) return;
-    Object.assign(params, preset);
-    seedInput.value = params.seed;
-    updaters.forEach((u) => u());
-    rebuildSnowflake();
-  };
-
-  presetSelect.value = uiState.preset;
-  presetSelect.addEventListener("change", () => {
-    uiState.preset = presetSelect.value;
-    applyPreset(uiState.preset);
   });
 
   document.querySelectorAll(".section-title").forEach((titleEl) => {
