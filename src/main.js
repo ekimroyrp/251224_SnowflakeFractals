@@ -720,13 +720,13 @@ function initUI() {
     makeSlider(tracersContainer, "tracerScale", "Scale", "tracerScale", 0.6, 10, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(tracersContainer, "tracerTaper", "Taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
-  );
-  updaters.push(
     makeSlider(tracersContainer, "tracerLength", "Length", "tracerLength", 0.5, 20, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
     makeSlider(tracersContainer, "tracerOffset", "Offset", "tracerOffset", 0, 2, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
+  );
+  updaters.push(
+    makeSlider(tracersContainer, "tracerTaper", "Taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
     makeToggle(tracersContainer, "tracerFlip", "Flip Taper", "tracerFlip", rebuildSnowflake)
