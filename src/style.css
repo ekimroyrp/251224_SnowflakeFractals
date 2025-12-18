@@ -90,6 +90,29 @@ html {
   letter-spacing: 0.01em;
   margin-bottom: 8px;
   color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title::after {
+  content: "▾";
+  font-size: 12px;
+  opacity: 0.8;
+  transition: transform 120ms ease;
+}
+
+.section.collapsed .section-title::after {
+  transform: rotate(-90deg);
+}
+
+.section-content {
+  display: block;
+}
+
+.section.collapsed .section-content {
+  display: none;
 }
 
 .control {

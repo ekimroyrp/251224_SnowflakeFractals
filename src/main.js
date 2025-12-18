@@ -481,26 +481,28 @@ function initUI() {
       <div class="ui-body">
         <div class="section">
           <div class="section-title">Presets</div>
-          <div class="control-row">
-            <label for="preset-select">Preset</label>
-            <select id="preset-select" class="pill-select"></select>
+          <div class="section-content">
+            <div class="control-row">
+              <label for="preset-select">Preset</label>
+              <select id="preset-select" class="pill-select"></select>
+            </div>
           </div>
         </div>
         <div class="section">
           <div class="section-title">Branches</div>
-          <div id="branches-controls"></div>
+          <div id="branches-controls" class="section-content"></div>
         </div>
         <div class="section">
           <div class="section-title">Tracers</div>
-          <div id="tracers-controls"></div>
+          <div id="tracers-controls" class="section-content"></div>
         </div>
         <div class="section">
           <div class="section-title">Look</div>
-          <div id="look-controls"></div>
+          <div id="look-controls" class="section-content"></div>
         </div>
         <div class="section">
           <div class="section-title">Behavior</div>
-          <div id="behavior-controls"></div>
+          <div id="behavior-controls" class="section-content"></div>
         </div>
       </div>
     </div>
@@ -788,6 +790,18 @@ function initUI() {
   presetSelect.addEventListener("change", () => {
     uiState.preset = presetSelect.value;
     applyPreset(uiState.preset);
+  });
+
+  document.querySelectorAll(".section-title").forEach((titleEl) => {
+    const section = titleEl.closest(".section");
+    const content = section.querySelector(".section-content") || titleEl.nextElementSibling;
+    if (!content) return;
+    section.classList.remove("collapsed");
+    content.style.display = "block";
+    titleEl.addEventListener("click", () => {
+      const collapsed = section.classList.toggle("collapsed");
+      content.style.display = collapsed ? "none" : "block";
+    });
   });
 
   updaters.forEach((u) => u());
