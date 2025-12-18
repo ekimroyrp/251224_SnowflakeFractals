@@ -733,7 +733,7 @@ function initUI() {
   );
 
   const tracersButtons = document.createElement("div");
-  tracersButtons.className = "button-stack";
+  tracersButtons.className = "button-stack spikes-buttons";
   tracersButtons.innerHTML = `
     <button id="btn-rand-tracers" class="pill-button full">Randomize Spikes</button>
   `;
@@ -745,11 +745,11 @@ function initUI() {
     }, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(lookContainer, "normalScale", "Surface noise", "normalScale", 0.05, 0.8, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+    makeSlider(lookContainer, "normalScale", "Noise", "normalScale", 0.05, 0.8, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
   updaters.push(
-    makeSlider(lookContainer, "spinSpeed", "Spin deg/s", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
+    makeSlider(lookContainer, "spinSpeed", "Spin", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
   );
   updaters.push(
     makeToggle(lookContainer, "snowfall", "Snowfall", "snowfall", () => {
