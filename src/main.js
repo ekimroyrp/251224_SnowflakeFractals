@@ -220,6 +220,7 @@ const renderer = new WebGLRenderer({
   canvas,
   antialias: true,
   alpha: false,
+  preserveDrawingBuffer: true,
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -511,6 +512,20 @@ function updateShatter(delta) {
   }
 }
 
+function takeScreenshot() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const filename = `snowflake-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`;
+  composer.render(0);
+  const dataUrl = renderer.domElement.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function animate() {
   const delta = clock.getDelta();
   const elapsed = clock.getElapsedTime();
@@ -774,6 +789,13 @@ function initUI() {
   updateShatterToggle = shatterToggle;
   updaters.push(shatterToggle);
 
+  const vizButtons = document.createElement("div");
+  vizButtons.className = "button-stack viz-buttons";
+  vizButtons.innerHTML = `
+    <button id="btn-screenshot" class="pill-button full">Take Screenshot</button>
+  `;
+  lookContainer.appendChild(vizButtons);
+
   const randBranches = () => {
     const rand = (min, max) => min + Math.random() * (max - min);
     const randInt = (min, max) => Math.floor(rand(min, max + 1));
@@ -806,6 +828,7 @@ function initUI() {
 
   document.getElementById("btn-rand-branches").addEventListener("click", randBranches);
   document.getElementById("btn-rand-tracers").addEventListener("click", randTracers);
+  document.getElementById("btn-screenshot").addEventListener("click", takeScreenshot);
 
   document.querySelectorAll(".section-title").forEach((titleEl) => {
     const section = titleEl.closest(".section");
