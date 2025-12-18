@@ -700,7 +700,7 @@ function initUI() {
     makeSlider(branchesContainer, "armThickness", "Thickness", "armThickness", 0.12, 0.6, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeSlider(branchesContainer, "branchAngle", "Angle", "branchAngle", 10, 60, 1, rebuildSnowflake, (v) => v.toFixed(0))
+    makeSlider(branchesContainer, "branchAngle", "Angle", "branchAngle", 10, 60, 0.1, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
     makeSlider(branchesContainer, "branchDecay", "Decay", "branchDecay", 0.45, 0.85, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
