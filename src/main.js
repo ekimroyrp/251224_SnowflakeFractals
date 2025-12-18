@@ -698,21 +698,6 @@ function initUI() {
     })
   );
 
-  const seedRow = document.createElement("div");
-  seedRow.className = "control-row";
-  seedRow.innerHTML = `
-    <label for="seed-input">Seed</label>
-    <input type="number" id="seed-input" min="1" max="1000000" step="1" class="pill-number">
-  `;
-  behaviorContainer.appendChild(seedRow);
-  const seedInput = seedRow.querySelector("input");
-  seedInput.value = params.seed;
-  seedInput.addEventListener("change", () => {
-    params.seed = Math.max(1, Math.min(1_000_000, parseInt(seedInput.value, 10) || 1));
-    seedInput.value = params.seed;
-    rebuildSnowflake();
-  });
-
   const buttonRow = document.createElement("div");
   buttonRow.className = "button-stack";
   buttonRow.innerHTML = `
@@ -738,7 +723,6 @@ function initUI() {
     params.branchProbability = rand(0.4, 1);
     params.plateDensity = rand(0.5, 2.5);
     params.tipScale = rand(0.25, 0.9);
-    seedInput.value = params.seed;
     rebuildSnowflake();
     updaters.forEach((u) => u());
   };
