@@ -58,6 +58,7 @@ const params = {
   tracerLength: 1.9,
   tracerOffset: 1.35,
   snowfall: true,
+  shatter: false,
   tracerFlip: false,
 };
 
@@ -291,9 +292,10 @@ composer.addPass(effectPass);
 
 let snowflake;
 let shatterState = null;
+let updateShatterToggle = null;
 
 function rebuildSnowflake() {
-  clearShatter();
+  clearShatter(true);
   const prevRotation = snowflake ? snowflake.rotation.clone() : null;
   if (snowflake) {
     scene.remove(snowflake);
@@ -327,11 +329,16 @@ const tmpPos = new Vector3();
 const tmpQuat = new Quaternion();
 const tmpScale = new Vector3();
 
-function clearShatter() {
-  if (!shatterState) return;
-  shatterState.visuals.forEach((v) => scene.remove(v.mesh));
-  shatterState = null;
+function clearShatter(resetToggle = false) {
+  if (shatterState) {
+    shatterState.visuals.forEach((v) => scene.remove(v.mesh));
+    shatterState = null;
+  }
   if (snowflake) snowflake.visible = true;
+  if (resetToggle && params.shatter) {
+    params.shatter = false;
+    if (typeof updateShatterToggle === "function") updateShatterToggle();
+  }
 }
 
 function triggerShatter() {
@@ -709,14 +716,19 @@ function initUI() {
       snowfieldNear.points.visible = params.snowfall;
     })
   );
-
-  const buttonRow = document.createElement("div");
-  buttonRow.className = "button-stack";
-  buttonRow.innerHTML = `
-    <button id="btn-shatter" class="pill-button full">Shatter</button>
-    <button id="btn-reset-camera" class="pill-button full">Reset camera</button>
-  `;
-  lookContainer.appendChild(buttonRow);
+  const shatterToggle = makeToggle(lookContainer, "shatterToggle", "Shatter", "shatter", () => {
+    if (params.shatter) {
+      triggerShatter();
+      if (!shatterState) {
+        params.shatter = false;
+        if (typeof updateShatterToggle === "function") updateShatterToggle();
+      }
+    } else {
+      clearShatter();
+    }
+  });
+  updateShatterToggle = shatterToggle;
+  updaters.push(shatterToggle);
 
   const randBranches = () => {
     const rand = (min, max) => min + Math.random() * (max - min);
@@ -750,12 +762,6 @@ function initUI() {
 
   document.getElementById("btn-rand-branches").addEventListener("click", randBranches);
   document.getElementById("btn-rand-tracers").addEventListener("click", randTracers);
-  document.getElementById("btn-shatter").addEventListener("click", () => triggerShatter());
-  document.getElementById("btn-reset-camera").addEventListener("click", () => {
-    camera.position.set(0, 0, 48);
-    controls.target.set(0, 0, 0);
-    controls.update();
-  });
 
   document.querySelectorAll(".section-title").forEach((titleEl) => {
     const section = titleEl.closest(".section");
