@@ -729,7 +729,7 @@ function initUI() {
     makeSlider(tracersContainer, "tracerTaper", "Taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
   );
   updaters.push(
-    makeToggle(tracersContainer, "tracerFlip", "Flip Taper", "tracerFlip", rebuildSnowflake)
+    makeToggle(tracersContainer, "tracerFlip", "Flip", "tracerFlip", rebuildSnowflake)
   );
 
   const tracersButtons = document.createElement("div");
@@ -749,7 +749,10 @@ function initUI() {
   );
 
   updaters.push(
-    makeSlider(lookContainer, "spinSpeed", "Spin", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
+    makeSlider(lookContainer, "spinSpeed", "Speed", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
+  );
+  updaters.push(
+    makeToggle(lookContainer, "autoRotate", "Spin", "autoRotate", () => {})
   );
   updaters.push(
     makeToggle(lookContainer, "snowfall", "Snowfall", "snowfall", () => {
