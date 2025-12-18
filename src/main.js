@@ -488,12 +488,8 @@ function initUI() {
           <div id="tracers-controls" class="section-content"></div>
         </div>
         <div class="section">
-          <div class="section-title">Look</div>
+          <div class="section-title">Visualization</div>
           <div id="look-controls" class="section-content"></div>
-        </div>
-        <div class="section">
-          <div class="section-title">Behavior</div>
-          <div id="behavior-controls" class="section-content"></div>
         </div>
       </div>
       <div id="ui-handle-bottom"></div>
@@ -618,7 +614,6 @@ function initUI() {
   const branchesContainer = document.getElementById("branches-controls");
   const tracersContainer = document.getElementById("tracers-controls");
   const lookContainer = document.getElementById("look-controls");
-  const behaviorContainer = document.getElementById("behavior-controls");
 
   const updaters = [];
 
@@ -656,6 +651,13 @@ function initUI() {
     makeSlider(branchesContainer, "tipScale", "Tip scale", "tipScale", 0.25, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
+  const branchesButtons = document.createElement("div");
+  branchesButtons.className = "button-stack";
+  branchesButtons.innerHTML = `
+    <button id="btn-rand-branches" class="pill-button full">Randomize branches</button>
+  `;
+  branchesContainer.appendChild(branchesButtons);
+
   updaters.push(
     makeSlider(tracersContainer, "tracerDensity", "Tracer density", "tracerDensity", 0.1, 1.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
@@ -675,6 +677,13 @@ function initUI() {
     makeToggle(tracersContainer, "tracerFlip", "Flip taper", "tracerFlip", rebuildSnowflake)
   );
 
+  const tracersButtons = document.createElement("div");
+  tracersButtons.className = "button-stack";
+  tracersButtons.innerHTML = `
+    <button id="btn-rand-tracers" class="pill-button full">Randomize tracers</button>
+  `;
+  tracersContainer.appendChild(tracersButtons);
+
   updaters.push(
     makeSlider(lookContainer, "environmentIntensity", "Env intensity", "environmentIntensity", 0, 3, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
@@ -687,12 +696,12 @@ function initUI() {
     makeSlider(lookContainer, "normalScale", "Surface noise", "normalScale", 0.05, 0.8, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
-  updaters.push(makeToggle(behaviorContainer, "autoRotate", "Auto rotate", "autoRotate", () => {}));
+  updaters.push(makeToggle(lookContainer, "autoRotate", "Auto rotate", "autoRotate", () => {}));
   updaters.push(
-    makeSlider(behaviorContainer, "spinSpeed", "Spin deg/s", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
+    makeSlider(lookContainer, "spinSpeed", "Spin deg/s", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
   );
   updaters.push(
-    makeToggle(behaviorContainer, "snowfall", "Snowfall", "snowfall", () => {
+    makeToggle(lookContainer, "snowfall", "Snowfall", "snowfall", () => {
       snowfield.points.visible = params.snowfall;
       snowfieldNear.points.visible = params.snowfall;
     })
@@ -701,12 +710,10 @@ function initUI() {
   const buttonRow = document.createElement("div");
   buttonRow.className = "button-stack";
   buttonRow.innerHTML = `
-    <button id="btn-rand-branches" class="pill-button full">Randomize branches</button>
-    <button id="btn-rand-tracers" class="pill-button full">Randomize tracers</button>
     <button id="btn-shatter" class="pill-button full">Shatter</button>
     <button id="btn-reset-camera" class="pill-button full">Reset camera</button>
   `;
-  behaviorContainer.appendChild(buttonRow);
+  lookContainer.appendChild(buttonRow);
 
   const randBranches = () => {
     const rand = (min, max) => min + Math.random() * (max - min);
