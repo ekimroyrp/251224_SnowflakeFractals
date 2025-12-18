@@ -24,7 +24,6 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import GUI from "lil-gui";
 import {
   BloomEffect,
   EffectComposer,
@@ -474,168 +473,324 @@ function animate() {
 
 animate();
 
-function setupGui() {
-  const gui = new GUI({
-    container: document.getElementById("ui-root"),
-    title: "Snowflake Controls",
-    width: 320,
-  });
+function initUI() {
+  const root = document.getElementById("ui-root");
+  root.innerHTML = `
+    <div id="ui-panel">
+      <div id="ui-handle"></div>
+      <div class="ui-body">
+        <div class="section">
+          <div class="section-title">Presets</div>
+          <div class="control-row">
+            <label for="preset-select">Preset</label>
+            <select id="preset-select" class="pill-select"></select>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Branches</div>
+          <div id="branches-controls"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Tracers</div>
+          <div id="tracers-controls"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Look</div>
+          <div id="look-controls"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Behavior</div>
+          <div id="behavior-controls"></div>
+        </div>
+      </div>
+    </div>
+  `;
 
-  const controllers = [];
-
-  function applyPreset(name) {
-    const preset = presets[name];
-    if (!preset) return;
-    Object.assign(params, preset);
-    uiState.preset = name;
-    controllers.forEach((c) => c.updateDisplay());
-    rebuildSnowflake();
+  const panel = document.getElementById("ui-panel");
+  const handle = document.getElementById("ui-handle");
+  if (panel && handle) {
+    panel.style.position = "fixed";
+    const rectInit = panel.getBoundingClientRect();
+    panel.style.left = `${rectInit.left}px`;
+    panel.style.top = `${rectInit.top}px`;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    const onMove = (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const left = clamp(startLeft + dx, 0, window.innerWidth - panel.offsetWidth);
+      const top = clamp(startTop + dy, 0, window.innerHeight - panel.offsetHeight);
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      panel.style.right = "auto";
+    };
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.cursor = "grab";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    handle.addEventListener("mousedown", (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = parseFloat(panel.style.left) || 0;
+      startTop = parseFloat(panel.style.top) || 0;
+      handle.style.cursor = "grabbing";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    handle.style.cursor = "grab";
+    window.addEventListener("resize", () => {
+      const rect = panel.getBoundingClientRect();
+      const left = clamp(rect.left, 0, window.innerWidth - panel.offsetWidth);
+      const top = clamp(rect.top, 0, window.innerHeight - panel.offsetHeight);
+      panel.style.left = `${left}px`;
+      panel.style.top = `${top}px`;
+      panel.style.right = "auto";
+    });
+    handle.style.cursor = "grab";
   }
 
-  const presetFolder = gui.addFolder("Presets");
-  const presetCtrl = presetFolder
-    .add(uiState, "preset", Object.keys(presets))
-    .name("Preset")
-    .onChange((value) => applyPreset(value));
-  controllers.push(presetCtrl);
+  const setRangeFill = (input) => {
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const val = Number(input.value);
+    const pct = ((val - min) / (max - min)) * 100;
+    input.style.setProperty("--range-progress", `${pct}%`);
+  };
 
-  const geo = gui.addFolder("Branches");
-  controllers.push(
-    geo.add(params, "recursionDepth", 1, 6, 1).name("Depth").onFinishChange(rebuildSnowflake)
+  const makeSlider = (container, id, label, key, min, max, step, onChange, format = (v) => v.toFixed(step % 1 === 0 ? 0 : 2)) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "control";
+    wrapper.innerHTML = `
+      <div class="control-row">
+        <label for="${id}">${label}</label>
+        <span class="value" id="${id}-value"></span>
+      </div>
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${params[key]}">
+    `;
+    container.appendChild(wrapper);
+    const input = wrapper.querySelector("input");
+    const valueEl = wrapper.querySelector(".value");
+    const update = () => {
+      valueEl.textContent = format(Number(params[key]));
+      input.value = params[key];
+      setRangeFill(input);
+    };
+    input.addEventListener("input", () => {
+      params[key] = parseFloat(input.value);
+      valueEl.textContent = format(params[key]);
+      setRangeFill(input);
+      onChange();
+    });
+    update();
+    return update;
+  };
+
+  const makeToggle = (container, id, label, key, onChange) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "control-row toggle-row";
+    wrapper.innerHTML = `
+      <label for="${id}">${label}</label>
+      <label class="switch">
+        <input type="checkbox" id="${id}">
+        <span class="slider"></span>
+      </label>
+    `;
+    container.appendChild(wrapper);
+    const input = wrapper.querySelector("input");
+    const update = () => {
+      input.checked = !!params[key];
+    };
+    input.addEventListener("change", () => {
+      params[key] = input.checked;
+      onChange();
+    });
+    update();
+    return update;
+  };
+
+  const branchesContainer = document.getElementById("branches-controls");
+  const tracersContainer = document.getElementById("tracers-controls");
+  const lookContainer = document.getElementById("look-controls");
+  const behaviorContainer = document.getElementById("behavior-controls");
+
+  const updaters = [];
+
+  updaters.push(
+    makeSlider(branchesContainer, "recursionDepth", "Depth", "recursionDepth", 1, 6, 1, rebuildSnowflake, (v) => v.toFixed(0))
   );
-  controllers.push(
-    geo.add(params, "symmetry", 3, 12, 1).name("Symmetry").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "symmetry", "Symmetry", "symmetry", 3, 12, 1, rebuildSnowflake, (v) => v.toFixed(0))
   );
-  controllers.push(
-    geo.add(params, "armLength", 4, 12, 0.1).name("Arm length").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "armLength", "Arm length", "armLength", 4, 12, 0.1, rebuildSnowflake, (v) => v.toFixed(1))
   );
-  controllers.push(
-    geo.add(params, "armThickness", 0.12, 0.6, 0.01).name("Arm thickness").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "armThickness", "Arm thickness", "armThickness", 0.12, 0.6, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    geo.add(params, "branchAngle", 10, 60, 1).name("Branch angle").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "branchAngle", "Branch angle", "branchAngle", 10, 60, 1, rebuildSnowflake, (v) => v.toFixed(0))
   );
-  controllers.push(
-    geo.add(params, "branchDecay", 0.45, 0.85, 0.01).name("Branch decay").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "branchDecay", "Branch decay", "branchDecay", 0.45, 0.85, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    geo.add(params, "thicknessDecay", 0.4, 0.9, 0.01).name("Thickness decay").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "thicknessDecay", "Thickness decay", "thicknessDecay", 0.4, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    geo.add(params, "branchJitter", 0, 24, 0.5).name("Branch jitter").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "branchJitter", "Branch jitter", "branchJitter", 0, 24, 0.5, rebuildSnowflake, (v) => v.toFixed(1))
   );
-  controllers.push(
-    geo.add(params, "branchProbability", 0.4, 1, 0.01).name("Branch density").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "branchProbability", "Branch density", "branchProbability", 0.4, 1, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    geo.add(params, "plateDensity", 0.5, 2.5, 0.05).name("Plate density").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "plateDensity", "Plate density", "plateDensity", 0.5, 2.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    geo.add(params, "tipScale", 0.25, 0.9, 0.01).name("Tip scale").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(branchesContainer, "tipScale", "Tip scale", "tipScale", 0.25, 0.9, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
   );
 
-  const tracersFolder = gui.addFolder("Tracers");
-  controllers.push(
-    tracersFolder.add(params, "tracerDensity", 0.1, 1.5, 0.05).name("Tracer density").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(tracersContainer, "tracerDensity", "Tracer density", "tracerDensity", 0.1, 1.5, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    tracersFolder.add(params, "tracerScale", 0.6, 10, 0.05).name("Tracer scale").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(tracersContainer, "tracerScale", "Tracer scale", "tracerScale", 0.6, 10, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    tracersFolder.add(params, "tracerTaper", 0.2, 1, 0.02).name("Tracer taper").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(tracersContainer, "tracerTaper", "Tracer taper", "tracerTaper", 0.2, 1, 0.02, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    tracersFolder.add(params, "tracerLength", 0.5, 20, 0.05).name("Tracer length").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(tracersContainer, "tracerLength", "Tracer length", "tracerLength", 0.5, 20, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    tracersFolder.add(params, "tracerOffset", 0, 2, 0.05).name("Tracer offset").onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeSlider(tracersContainer, "tracerOffset", "Tracer offset", "tracerOffset", 0, 2, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    tracersFolder.add(params, "tracerFlip").name("Flip taper").onChange(rebuildSnowflake)
-  );
-
-  const look = gui.addFolder("Look");
-  controllers.push(
-    look
-      .add(params, "environmentIntensity", 0, 3, 0.05)
-      .name("Env intensity")
-      .onFinishChange(rebuildSnowflake)
-  );
-  controllers.push(
-    look
-      .add(params, "bloomStrength", 0, 1, 0.01)
-      .name("Bloom")
-      .onChange((v) => {
-        bloom.intensity = v;
-      })
-  );
-  controllers.push(
-    look
-      .add(params, "normalScale", 0.05, 0.8, 0.01)
-      .name("Surface noise")
-      .onFinishChange(rebuildSnowflake)
+  updaters.push(
+    makeToggle(tracersContainer, "tracerFlip", "Flip taper", "tracerFlip", rebuildSnowflake)
   );
 
-  const behavior = gui.addFolder("Behavior");
-  controllers.push(behavior.add(params, "autoRotate").name("Auto rotate"));
-  controllers.push(
-    behavior.add(params, "spinSpeed", -30, 30, 0.1).name("Spin deg/s")
+  updaters.push(
+    makeSlider(lookContainer, "environmentIntensity", "Env intensity", "environmentIntensity", 0, 3, 0.05, rebuildSnowflake, (v) => v.toFixed(2))
   );
-  controllers.push(
-    behavior.add(params, "snowfall").name("Snowfall").onChange(() => {
+  updaters.push(
+    makeSlider(lookContainer, "bloomStrength", "Bloom", "bloomStrength", 0, 1, 0.01, () => {
+      bloom.intensity = params.bloomStrength;
+    }, (v) => v.toFixed(2))
+  );
+  updaters.push(
+    makeSlider(lookContainer, "normalScale", "Surface noise", "normalScale", 0.05, 0.8, 0.01, rebuildSnowflake, (v) => v.toFixed(2))
+  );
+
+  updaters.push(makeToggle(behaviorContainer, "autoRotate", "Auto rotate", "autoRotate", () => {}));
+  updaters.push(
+    makeSlider(behaviorContainer, "spinSpeed", "Spin deg/s", "spinSpeed", -30, 30, 0.1, () => {}, (v) => v.toFixed(1))
+  );
+  updaters.push(
+    makeToggle(behaviorContainer, "snowfall", "Snowfall", "snowfall", () => {
       snowfield.points.visible = params.snowfall;
       snowfieldNear.points.visible = params.snowfall;
     })
   );
 
-  const actions = {
-    randomizeBranches: () => {
-      const rand = (min, max) => min + Math.random() * (max - min);
-      const randInt = (min, max) => Math.floor(rand(min, max + 1));
-      params.seed = randInt(1, 1_000_000);
-      params.recursionDepth = randInt(1, 6);
-      params.symmetry = randInt(3, 12);
-      params.armLength = rand(4, 12);
-      params.armThickness = rand(0.12, 0.6);
-      params.branchAngle = rand(10, 60);
-      params.branchDecay = rand(0.45, 0.85);
-      params.thicknessDecay = rand(0.4, 0.9);
-      params.branchJitter = rand(0, 24);
-      params.branchProbability = rand(0.4, 1);
-      params.plateDensity = rand(0.5, 2.5);
-      params.tipScale = rand(0.25, 0.9);
-      controllers.forEach((c) => c.updateDisplay());
-      rebuildSnowflake();
-    },
-    randomizeTracers: () => {
-      const rand = (min, max) => min + Math.random() * (max - min);
-      params.tracerDensity = rand(0.1, 1.5);
-      params.tracerScale = rand(0.6, 10);
-      params.tracerTaper = rand(0.2, 1);
-      params.tracerLength = rand(0.5, 20);
-      params.tracerOffset = rand(0, 2);
-      controllers.forEach((c) => c.updateDisplay());
-      rebuildSnowflake();
-    },
-    shatter: () => {
-      triggerShatter();
-    },
-    resetCamera: () => {
-      camera.position.set(0, 0, 16);
-      controls.target.set(0, 0, 0);
-      controls.update();
-    },
+  const seedRow = document.createElement("div");
+  seedRow.className = "control-row";
+  seedRow.innerHTML = `
+    <label for="seed-input">Seed</label>
+    <input type="number" id="seed-input" min="1" max="1000000" step="1" class="pill-number">
+  `;
+  behaviorContainer.appendChild(seedRow);
+  const seedInput = seedRow.querySelector("input");
+  seedInput.value = params.seed;
+  seedInput.addEventListener("change", () => {
+    params.seed = Math.max(1, Math.min(1_000_000, parseInt(seedInput.value, 10) || 1));
+    seedInput.value = params.seed;
+    rebuildSnowflake();
+  });
+
+  const buttonRow = document.createElement("div");
+  buttonRow.className = "button-grid";
+  buttonRow.innerHTML = `
+    <button id="btn-rand-branches" class="pill-button">Randomize branches</button>
+    <button id="btn-rand-tracers" class="pill-button">Randomize tracers</button>
+    <button id="btn-shatter" class="pill-button">Shatter</button>
+    <button id="btn-reset-camera" class="pill-button">Reset camera</button>
+  `;
+  behaviorContainer.appendChild(buttonRow);
+
+  const randBranches = () => {
+    const rand = (min, max) => min + Math.random() * (max - min);
+    const randInt = (min, max) => Math.floor(rand(min, max + 1));
+    params.seed = randInt(1, 1_000_000);
+    params.recursionDepth = randInt(1, 6);
+    params.symmetry = randInt(3, 12);
+    params.armLength = rand(4, 12);
+    params.armThickness = rand(0.12, 0.6);
+    params.branchAngle = rand(10, 60);
+    params.branchDecay = rand(0.45, 0.85);
+    params.thicknessDecay = rand(0.4, 0.9);
+    params.branchJitter = rand(0, 24);
+    params.branchProbability = rand(0.4, 1);
+    params.plateDensity = rand(0.5, 2.5);
+    params.tipScale = rand(0.25, 0.9);
+    seedInput.value = params.seed;
+    rebuildSnowflake();
+    updaters.forEach((u) => u());
   };
 
-  controllers.push(
-    behavior.add(params, "seed", 1, 1_000_000, 1).name("Seed").onFinishChange(rebuildSnowflake)
-  );
-  controllers.push(behavior.add(actions, "randomizeBranches").name("Randomize branches"));
-  controllers.push(behavior.add(actions, "randomizeTracers").name("Randomize tracers"));
-  controllers.push(behavior.add(actions, "shatter").name("Shatter"));
-  controllers.push(behavior.add(actions, "resetCamera").name("Reset camera"));
+  const randTracers = () => {
+    const rand = (min, max) => min + Math.random() * (max - min);
+    params.tracerDensity = rand(0.1, 1.5);
+    params.tracerScale = rand(0.6, 10);
+    params.tracerTaper = rand(0.2, 1);
+    params.tracerLength = rand(0.5, 20);
+    params.tracerOffset = rand(0, 2);
+    rebuildSnowflake();
+    updaters.forEach((u) => u());
+  };
 
-  applyPreset(uiState.preset);
+  document.getElementById("btn-rand-branches").addEventListener("click", randBranches);
+  document.getElementById("btn-rand-tracers").addEventListener("click", randTracers);
+  document.getElementById("btn-shatter").addEventListener("click", () => triggerShatter());
+  document.getElementById("btn-reset-camera").addEventListener("click", () => {
+    camera.position.set(0, 0, 48);
+    controls.target.set(0, 0, 0);
+    controls.update();
+  });
+
+  const presetSelect = document.getElementById("preset-select");
+  Object.keys(presets).forEach((name) => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    presetSelect.appendChild(opt);
+  });
+
+  const applyPreset = (name) => {
+    const preset = presets[name];
+    if (!preset) return;
+    Object.assign(params, preset);
+    seedInput.value = params.seed;
+    updaters.forEach((u) => u());
+    rebuildSnowflake();
+  };
+
+  presetSelect.value = uiState.preset;
+  presetSelect.addEventListener("change", () => {
+    uiState.preset = presetSelect.value;
+    applyPreset(uiState.preset);
+  });
+
+  updaters.forEach((u) => u());
 }
 
-setupGui();
+initUI();

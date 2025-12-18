@@ -2,16 +2,23 @@
   color-scheme: dark;
   --bg-top: #0a1526;
   --bg-bottom: #08111d;
-  --frost: rgba(26, 54, 86, 0.6);
-  --frost-border: rgba(102, 191, 255, 0.35);
-  --glow: rgba(102, 191, 255, 0.4);
+  --panel-bg: rgba(255, 255, 255, 0.08);
+  --panel-border: rgba(255, 255, 255, 0.5);
+  --panel-shadow: rgba(16, 53, 92, 0.35);
+  --panel-blur: blur(14px);
+  --text: #0c1a2b;
+  --accent: #e5f1ff;
+  --blueprint: #6ca6df;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -35,50 +42,235 @@ body, html {
 
 #ui-root {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  max-width: 360px;
+  inset: 0;
   pointer-events: none;
 }
 
-#ui-root .lil-gui {
+#ui-panel {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  min-width: 260px;
+  max-width: 360px;
+  color: var(--text);
+  background: var(--panel-bg);
+  border: none;
+  border-radius: 14px;
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  box-shadow: 0 12px 32px var(--panel-shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  user-select: none;
   pointer-events: auto;
-  background: var(--frost);
-  border: 1px solid var(--frost-border);
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 10;
 }
 
-.lil-gui .title {
-  color: #cfe8ff;
-  text-shadow: 0 0 12px var(--glow);
+#ui-handle {
+  padding: 12px 14px;
+  min-height: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  cursor: grab;
+  border-bottom: 1px solid var(--panel-border);
+  font-weight: 600;
+  color: var(--text);
 }
 
-.lil-gui .folder {
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
+.ui-body {
+  padding: 12px 14px 16px;
+  position: relative;
 }
 
-.lil-gui input[type="range"] {
-  accent-color: #66bfff;
+.section + .section {
+  margin-top: 10px;
 }
 
-.lil-gui input[type="text"],
-.lil-gui input[type="number"] {
-  background: rgba(10, 24, 39, 0.5);
-  color: #eaf6ff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.section-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+  color: #ffffff;
 }
 
-.lil-gui .controller .property-name {
-  color: #b7d7ff;
+.control {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+
+.toggle-row {
+  align-items: center;
+}
+
+.value {
+  font-family: "Consolas", "SFMono-Regular", ui-monospace, monospace;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  top: 1px;
+  background: linear-gradient(135deg, #ffffff, #e6eef5);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  transition: transform 160ms ease;
+}
+
+.switch input:checked + .slider {
+  background: linear-gradient(135deg, #00a2ff, #5dd0ff);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(16px);
+}
+
+input[type="range"] {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(
+      90deg,
+      #00a2ff 0%,
+      #5dd0ff var(--range-progress, 50%),
+      rgba(255, 255, 255, 0.12) var(--range-progress, 50%),
+      rgba(255, 255, 255, 0.12) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 1px 4px rgba(0, 0, 0, 0.25);
+  filter: drop-shadow(0 1px 1px rgba(8, 32, 64, 0.4));
+  background-color: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, #e6eef5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  margin-top: -1px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, #e6eef5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  margin-top: -1px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+
+.pill-select,
+.pill-number {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.07));
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 14px;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+.pill-button {
+  flex: 1;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.07));
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.32);
+  transition:
+    transform 120ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    opacity 120ms ease;
+}
+
+.pill-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00a2ff, #5dd0ff);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.22), 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.pill-button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+label {
+  color: #ffffff;
 }
 
 @media (max-width: 640px) {
-  #ui-root {
-    top: 8px;
-    right: 8px;
-    max-width: calc(100% - 16px);
+  #ui-panel {
+    width: calc(100% - 20px);
+    max-width: none;
+    left: 10px !important;
+    right: 10px !important;
   }
 }
