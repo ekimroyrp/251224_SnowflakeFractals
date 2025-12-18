@@ -355,7 +355,8 @@ function triggerShatter() {
       c.count > 0 &&
       (c.userData.part === "segments" || c.userData.part === "tracers")
   );
-  if (instanced.length === 0) return;
+  const hubMesh = snowflake.getObjectByName("hub");
+  if (instanced.length === 0 && !hubMesh) return;
 
   const world = new World();
   world.gravity.set(0, -9.8, 0);
@@ -376,8 +377,40 @@ function triggerShatter() {
   const visuals = [];
   const bodies = [];
 
-  const totalPieces = instanced.reduce((sum, m) => sum + m.count, 0);
   let remaining = MAX_SHATTER_PIECES;
+
+  if (hubMesh) {
+    hubMesh.updateWorldMatrix(true, true);
+    hubMesh.matrixWorld.decompose(tmpPos, tmpQuat, tmpScale);
+    const geom = hubMesh.geometry;
+    if (!geom.boundingBox) geom.computeBoundingBox();
+    const bbox = geom.boundingBox;
+    const sizeX = (bbox.max.x - bbox.min.x) * tmpScale.x;
+    const sizeY = (bbox.max.y - bbox.min.y) * tmpScale.y;
+    const sizeZ = (bbox.max.z - bbox.min.z) * tmpScale.z;
+    const half = new Vec3(sizeX * 0.5, sizeY * 0.5, sizeZ * 0.5);
+    const body = new Body({
+      mass: Math.max(0.05, sizeX * sizeY * sizeZ * 0.03),
+    });
+    body.addShape(new CBox(half));
+    body.position.set(tmpPos.x, tmpPos.y, tmpPos.z);
+    body.quaternion.set(tmpQuat.x, tmpQuat.y, tmpQuat.z, tmpQuat.w);
+    body.linearDamping = 0.01;
+    body.angularDamping = 0.01;
+    body.sleepSpeedLimit = 0.2;
+    body.sleepTimeLimit = 0.6;
+    world.addBody(body);
+    bodies.push(body);
+
+    const hubClone = new InstancedMesh(hubMesh.geometry, hubMesh.material, 1);
+    hubClone.setMatrixAt(0, hubMesh.matrixWorld);
+    hubClone.instanceMatrix.needsUpdate = true;
+    scene.add(hubClone);
+    visuals.push({ mesh: hubClone, count: 1, baseScale: tmpScale.clone(), isHub: true });
+    remaining = Math.max(0, remaining - 1);
+  }
+
+  const totalPieces = instanced.reduce((sum, m) => sum + m.count, 0);
 
   instanced.forEach((mesh, idx) => {
     if (remaining <= 0) return;
@@ -460,7 +493,9 @@ function updateShatter(delta) {
         body.quaternion.z,
         body.quaternion.w
       );
-      if (shape && shape.halfExtents) {
+      if (v.isHub && v.baseScale) {
+        tmpScale.copy(v.baseScale);
+      } else if (shape && shape.halfExtents) {
         tmpScale.set(
           shape.halfExtents.x * 2,
           shape.halfExtents.y * 2,

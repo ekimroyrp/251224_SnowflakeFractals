@@ -2,6 +2,7 @@ import {
   BoxGeometry,
   Color,
   CylinderGeometry,
+  DodecahedronGeometry,
   DoubleSide,
   Group,
   MathUtils,
@@ -200,12 +201,13 @@ function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
 }
 
 function createHub(material, thickness) {
-  const radius = thickness * 1.6;
+  const radius = thickness * 2.2;
   const hub = new Mesh(
-    new CylinderGeometry(radius, radius, thickness * 3.2, 6, 1, false),
+    new DodecahedronGeometry(radius, 0),
     material
   );
-  hub.rotation.z = Math.PI / 6;
+  hub.name = "hub";
+  hub.userData.part = "hub";
   return hub;
 }
 
