@@ -323,6 +323,7 @@ window.addEventListener("resize", handleResize);
 
 const clock = new Clock();
 const MAX_SHATTER_PIECES = 450;
+const SHATTER_MAX_TIME = 5;
 
 const tmpMatrix = new Matrix4();
 const tmpPos = new Vector3();
@@ -427,16 +428,25 @@ function triggerShatter() {
     visuals,
     bodies,
     accumulator: 0,
+    elapsed: 0,
+    stopped: false,
   };
 }
 
 function updateShatter(delta) {
   if (!shatterState) return;
-  const step = 1 / 60;
-  shatterState.accumulator += delta;
-  while (shatterState.accumulator >= step) {
-    shatterState.world.step(step);
-    shatterState.accumulator -= step;
+  if (!shatterState.stopped) {
+    shatterState.elapsed += delta;
+    if (shatterState.elapsed >= SHATTER_MAX_TIME) {
+      shatterState.stopped = true;
+    } else {
+      const step = 1 / 60;
+      shatterState.accumulator += delta;
+      while (shatterState.accumulator >= step) {
+        shatterState.world.step(step);
+        shatterState.accumulator -= step;
+      }
+    }
   }
   let idx = 0;
   for (const v of shatterState.visuals) {
