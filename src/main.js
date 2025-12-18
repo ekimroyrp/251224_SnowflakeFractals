@@ -520,13 +520,12 @@ function initUI() {
     let startY = 0;
     let startLeft = 0;
     let startTop = 0;
-    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
     const onMove = (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      const left = clamp(startLeft + dx, 0, window.innerWidth - panel.offsetWidth);
-      const top = clamp(startTop + dy, 0, window.innerHeight - panel.offsetHeight);
+      const left = startLeft + dx;
+      const top = startTop + dy;
       panel.style.left = `${left}px`;
       panel.style.top = `${top}px`;
       panel.style.right = "auto";
@@ -552,11 +551,6 @@ function initUI() {
     });
     handle.style.cursor = "grab";
     window.addEventListener("resize", () => {
-      const rect = panel.getBoundingClientRect();
-      const left = clamp(rect.left, 0, window.innerWidth - panel.offsetWidth);
-      const top = clamp(rect.top, 0, window.innerHeight - panel.offsetHeight);
-      panel.style.left = `${left}px`;
-      panel.style.top = `${top}px`;
       panel.style.right = "auto";
     });
     handle.style.cursor = "grab";
