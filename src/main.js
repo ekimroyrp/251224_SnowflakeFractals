@@ -355,7 +355,27 @@ function setupGui() {
 
   const actions = {
     randomizeSeed: () => {
-      params.seed = Math.floor(Math.random() * 1_000_000);
+      const rand = (min, max) => min + Math.random() * (max - min);
+      const randInt = (min, max) => Math.floor(rand(min, max + 1));
+
+      params.seed = randInt(1, 1_000_000);
+      params.recursionDepth = randInt(1, 6);
+      params.symmetry = randInt(3, 12);
+      params.armLength = rand(4, 12);
+      params.armThickness = rand(0.12, 0.6);
+      params.branchAngle = rand(10, 60);
+      params.branchDecay = rand(0.45, 0.85);
+      params.thicknessDecay = rand(0.4, 0.9);
+      params.branchJitter = rand(0, 24);
+      params.branchProbability = rand(0.4, 1);
+      params.plateDensity = rand(0.5, 2.5);
+      params.tipScale = rand(0.25, 0.9);
+      params.tracerDensity = rand(0.1, 1.5);
+      params.tracerScale = rand(0.6, 10);
+      params.tracerTaper = rand(0.2, 1);
+      params.tracerLength = rand(0.5, 20);
+      params.tracerOffset = rand(0, 2);
+
       controllers.forEach((c) => c.updateDisplay());
       rebuildSnowflake();
     },
