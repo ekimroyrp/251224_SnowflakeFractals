@@ -2,10 +2,14 @@ import "./style.css";
 import {
   ACESFilmicToneMapping,
   AmbientLight,
+  BufferAttribute,
+  BufferGeometry,
   Clock,
   Color,
   DataTexture,
   DirectionalLight,
+  Points,
+  PointsMaterial,
   PMREMGenerator,
   PerspectiveCamera,
   RGBAFormat,
@@ -49,6 +53,7 @@ const params = {
   tracerTaper: 0.55,
   tracerLength: 2.2,
   tracerOffset: 1.2,
+  snowfall: true,
 };
 
 const presets = {
@@ -151,6 +156,60 @@ const resources = {
 
 const canvas = document.getElementById("scene-canvas");
 
+function createSnowfield(options = {}) {
+  const {
+    count = 1600,
+    area = 90,
+    size = 0.04,
+    opacity = 0.35,
+    velocityMin = 0.8,
+    velocityMax = 2.2,
+    sway = 0.05,
+    renderOrder = -5,
+  } = options;
+
+  const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    const ix = i * 3;
+    positions[ix] = (Math.random() - 0.5) * area;
+    positions[ix + 1] = (Math.random() - 0.5) * area;
+    positions[ix + 2] = (Math.random() - 0.5) * area;
+    velocities[i] = velocityMin + Math.random() * (velocityMax - velocityMin);
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(positions, 3));
+  const material = new PointsMaterial({
+    color: 0xd6e8ff,
+    size,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+  });
+  const points = new Points(geometry, material);
+  points.renderOrder = renderOrder;
+  return { points, positions, velocities, geometry, count, area, sway };
+}
+
+function updateSnowfield(field, delta, elapsed) {
+  const { positions, velocities, count, area, sway } = field;
+  for (let i = 0; i < count; i++) {
+    const ix = i * 3;
+    const drift = Math.sin(elapsed * 0.5 + i * 0.37) * sway;
+    positions[ix] += drift * delta;
+    positions[ix + 1] -= velocities[i] * delta;
+    if (positions[ix + 1] < -area * 0.5) {
+      positions[ix + 1] = area * 0.5;
+      positions[ix] = (Math.random() - 0.5) * area;
+      positions[ix + 2] = (Math.random() - 0.5) * area;
+    }
+    if (positions[ix] < -area * 0.5) positions[ix] = area * 0.5;
+    if (positions[ix] > area * 0.5) positions[ix] = -area * 0.5;
+  }
+  field.geometry.attributes.position.needsUpdate = true;
+}
+
 const renderer = new WebGLRenderer({
   canvas,
   antialias: true,
@@ -171,6 +230,20 @@ const scene = new Scene();
 scene.environment = envTexture;
 scene.background = new Color(0x0b1323);
 pmrem.dispose();
+
+const snowfield = createSnowfield();
+const snowfieldNear = createSnowfield({
+  count: 120,
+  area: 40,
+  size: 0.14,
+  opacity: 0.5,
+  velocityMin: 1.2,
+  velocityMax: 2.8,
+  sway: 0.08,
+  renderOrder: -4,
+});
+scene.add(snowfield.points);
+scene.add(snowfieldNear.points);
 
 const camera = new PerspectiveCamera(
   45,
@@ -239,11 +312,14 @@ const clock = new Clock();
 
 function animate() {
   const delta = clock.getDelta();
+  const elapsed = clock.getElapsedTime();
   controls.update();
   if (params.autoRotate && snowflake) {
     const spin = (params.spinSpeed * Math.PI) / 180;
     snowflake.rotation.z += spin * delta;
   }
+  updateSnowfield(snowfield, delta, elapsed);
+  updateSnowfield(snowfieldNear, delta, elapsed);
   composer.render(delta);
   requestAnimationFrame(animate);
 }
@@ -275,7 +351,7 @@ function setupGui() {
     .onChange((value) => applyPreset(value));
   controllers.push(presetCtrl);
 
-  const geo = gui.addFolder("Geometry");
+  const geo = gui.addFolder("Branches");
   controllers.push(
     geo.add(params, "recursionDepth", 1, 6, 1).name("Depth").onFinishChange(rebuildSnowflake)
   );
@@ -309,20 +385,22 @@ function setupGui() {
   controllers.push(
     geo.add(params, "tipScale", 0.25, 0.9, 0.01).name("Tip scale").onFinishChange(rebuildSnowflake)
   );
+
+  const tracersFolder = gui.addFolder("Tracers");
   controllers.push(
-    geo.add(params, "tracerDensity", 0.1, 1.5, 0.05).name("Tracer density").onFinishChange(rebuildSnowflake)
+    tracersFolder.add(params, "tracerDensity", 0.1, 1.5, 0.05).name("Tracer density").onFinishChange(rebuildSnowflake)
   );
   controllers.push(
-    geo.add(params, "tracerScale", 0.6, 10, 0.05).name("Tracer scale").onFinishChange(rebuildSnowflake)
+    tracersFolder.add(params, "tracerScale", 0.6, 10, 0.05).name("Tracer scale").onFinishChange(rebuildSnowflake)
   );
   controllers.push(
-    geo.add(params, "tracerTaper", 0.2, 1, 0.02).name("Tracer taper").onFinishChange(rebuildSnowflake)
+    tracersFolder.add(params, "tracerTaper", 0.2, 1, 0.02).name("Tracer taper").onFinishChange(rebuildSnowflake)
   );
   controllers.push(
-    geo.add(params, "tracerLength", 0.5, 20, 0.05).name("Tracer length").onFinishChange(rebuildSnowflake)
+    tracersFolder.add(params, "tracerLength", 0.5, 20, 0.05).name("Tracer length").onFinishChange(rebuildSnowflake)
   );
   controllers.push(
-    geo.add(params, "tracerOffset", 0, 2, 0.05).name("Tracer offset").onFinishChange(rebuildSnowflake)
+    tracersFolder.add(params, "tracerOffset", 0, 2, 0.05).name("Tracer offset").onFinishChange(rebuildSnowflake)
   );
 
   const look = gui.addFolder("Look");
@@ -352,12 +430,17 @@ function setupGui() {
   controllers.push(
     behavior.add(params, "spinSpeed", -30, 30, 0.1).name("Spin deg/s")
   );
+  controllers.push(
+    behavior.add(params, "snowfall").name("Snowfall").onChange(() => {
+      snowfield.points.visible = params.snowfall;
+      snowfieldNear.points.visible = params.snowfall;
+    })
+  );
 
   const actions = {
-    randomizeSeed: () => {
+    randomizeBranches: () => {
       const rand = (min, max) => min + Math.random() * (max - min);
       const randInt = (min, max) => Math.floor(rand(min, max + 1));
-
       params.seed = randInt(1, 1_000_000);
       params.recursionDepth = randInt(1, 6);
       params.symmetry = randInt(3, 12);
@@ -370,12 +453,16 @@ function setupGui() {
       params.branchProbability = rand(0.4, 1);
       params.plateDensity = rand(0.5, 2.5);
       params.tipScale = rand(0.25, 0.9);
+      controllers.forEach((c) => c.updateDisplay());
+      rebuildSnowflake();
+    },
+    randomizeTracers: () => {
+      const rand = (min, max) => min + Math.random() * (max - min);
       params.tracerDensity = rand(0.1, 1.5);
       params.tracerScale = rand(0.6, 10);
       params.tracerTaper = rand(0.2, 1);
       params.tracerLength = rand(0.5, 20);
       params.tracerOffset = rand(0, 2);
-
       controllers.forEach((c) => c.updateDisplay());
       rebuildSnowflake();
     },
@@ -389,7 +476,8 @@ function setupGui() {
   controllers.push(
     behavior.add(params, "seed", 1, 1_000_000, 1).name("Seed").onFinishChange(rebuildSnowflake)
   );
-  controllers.push(behavior.add(actions, "randomizeSeed").name("Randomize seed"));
+  controllers.push(behavior.add(actions, "randomizeBranches").name("Randomize branches"));
+  controllers.push(behavior.add(actions, "randomizeTracers").name("Randomize tracers"));
   controllers.push(behavior.add(actions, "resetCamera").name("Reset camera"));
 
   applyPreset(uiState.preset);
