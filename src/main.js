@@ -496,12 +496,16 @@ function initUI() {
           <div id="behavior-controls" class="section-content"></div>
         </div>
       </div>
+      <div id="ui-handle-bottom"></div>
     </div>
   `;
 
   const panel = document.getElementById("ui-panel");
-  const handle = document.getElementById("ui-handle");
-  if (panel && handle) {
+  const handles = [
+    document.getElementById("ui-handle"),
+    document.getElementById("ui-handle-bottom"),
+  ].filter(Boolean);
+  if (panel && handles.length) {
     panel.style.position = "fixed";
     const rectInit = panel.getBoundingClientRect();
     panel.style.left = `${rectInit.left}px`;
@@ -524,27 +528,32 @@ function initUI() {
     const onUp = () => {
       if (!dragging) return;
       dragging = false;
-      handle.style.cursor = "grab";
+      handles.forEach((h) => {
+        h.style.cursor = "grab";
+      });
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
     };
-    handle.addEventListener("mousedown", (e) => {
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startLeft = parseFloat(panel.style.left) || 0;
-      startTop = parseFloat(panel.style.top) || 0;
-      handle.style.cursor = "grabbing";
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-      e.preventDefault();
-      e.stopPropagation();
+    handles.forEach((h) => {
+      h.addEventListener("mousedown", (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseFloat(panel.style.left) || 0;
+        startTop = parseFloat(panel.style.top) || 0;
+        handles.forEach((hn) => {
+          hn.style.cursor = "grabbing";
+        });
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      h.style.cursor = "grab";
     });
-    handle.style.cursor = "grab";
     window.addEventListener("resize", () => {
       panel.style.right = "auto";
     });
-    handle.style.cursor = "grab";
   }
 
   const setRangeFill = (input) => {

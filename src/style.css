@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: dark;
   --bg-top: #0a1526;
   --bg-bottom: #08111d;
@@ -71,6 +71,15 @@ html {
 }
 
 #ui-handle {
+  padding: 12px 14px;
+  min-height: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  cursor: grab;
+  font-weight: 600;
+  color: var(--text);
+}
+
+#ui-handle-bottom {
   padding: 12px 14px;
   min-height: 18px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
