@@ -102,15 +102,15 @@ function addTip(mats, parent, length, thickness, params) {
   );
 }
 
-function addTracers(mats, parent, length, thickness, rng, params) {
+function addTracers(mats, parent, length, thickness, rngTracer, params) {
   const tracerCount = Math.max(1, Math.round(length * params.tracerDensity));
   const height = Math.max(thickness * params.tracerLength, thickness * 0.4);
   for (let i = 0; i < tracerCount; i++) {
     const u = MathUtils.lerp(0.12, 0.95, (i + 0.35) / (tracerCount + 0.7));
     const radius =
-      thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rng());
+      thickness * params.tracerScale * MathUtils.lerp(0.9, 1.1, rngTracer());
     const posX = u * length;
-    const posY = (rng() - 0.5) * thickness * params.tracerOffset;
+    const posY = (rngTracer() - 0.5) * thickness * params.tracerOffset;
     const flip = params.tracerFlip === true;
     if (flip) {
       // rotate 180 around Y to swap tapered end along the X-aligned tracer axis
@@ -126,7 +126,16 @@ function addTracers(mats, parent, length, thickness, rng, params) {
   }
 }
 
-function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
+function growBranch(
+  mats,
+  parentMatrix,
+  depth,
+  length,
+  thickness,
+  rng,
+  rngTracer,
+  params
+) {
   // segment core
   pushBoxInstance(
     mats.segments,
@@ -141,7 +150,7 @@ function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
   );
 
   addSidePlates(mats, parentMatrix, length, thickness, rng, params);
-  addTracers(mats, parentMatrix, length, thickness, rng, params);
+  addTracers(mats, parentMatrix, length, thickness, rngTracer, params);
 
   if (depth <= 1) {
     addTip(mats, parentMatrix, length, thickness, params);
@@ -178,6 +187,7 @@ function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
       childLength,
       childThickness,
       rng,
+      rngTracer,
       params
     );
   }
@@ -195,6 +205,7 @@ function growBranch(mats, parentMatrix, depth, length, thickness, rng, params) {
       childLength,
       childThickness,
       rng,
+      rngTracer,
       params
     );
   }
@@ -213,6 +224,7 @@ function createHub(material, thickness) {
 
 export function buildSnowflake(params, resources = {}) {
   const rng = mulberry32((params.seed || 1) >>> 0);
+  const rngTracer = mulberry32(((params.seed || 1) >>> 0) ^ 0x9e3779b9);
   const material = createIceMaterial(params, resources);
   const snowflake = new Group();
   snowflake.name = "snowflake";
@@ -240,6 +252,7 @@ export function buildSnowflake(params, resources = {}) {
     params.armLength,
     params.armThickness,
     rng,
+    rngTracer,
     params
   );
 
